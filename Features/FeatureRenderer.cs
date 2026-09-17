@@ -53,8 +53,10 @@ internal abstract class FeatureRenderer : ToggleFeature
 			OrderedProperty = orderedProperty;
 			Picker = builder((T)orderedProperty.Property.GetValue(feature));
 
-			var position = Event.current.mousePosition;
-			Picker.SetWindowPosition(parentX + LabelStyle.fixedWidth * 3 + LabelStyle.margin.left * 6, position.y + parentY - 32f);
+			// Convert out of the scroll view before placing a separate GUI window.
+			var position = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+			Picker.SetWindowPosition(Mathf.Clamp(parentX + LabelStyle.fixedWidth * 3 + LabelStyle.margin.left * 6, 0, Mathf.Max(0, Screen.width - 190)),
+				Mathf.Clamp(position.y - 32f, 0, Mathf.Max(0, Screen.height - 220)));
 		}
 
 		public IFeature Feature { get; }
@@ -106,6 +108,7 @@ internal abstract class FeatureRenderer : ToggleFeature
 	}
 
 	private int _selectedTabIndex = 0;
+	private Vector2 _settingsScroll;
 	private void RenderFeatureWindow(int id)
 	{
 		var fixedTabs = new[] { Strings.FeatureRendererSummary };
@@ -128,6 +131,7 @@ internal abstract class FeatureRenderer : ToggleFeature
 
 		if (lastIndex != _selectedTabIndex)
 		{
+			_settingsScroll = Vector2.zero;
 			_colorSelectionContext = null;
 			_keyCodeSelectionContext = null;
 		}
@@ -203,8 +207,10 @@ internal abstract class FeatureRenderer : ToggleFeature
 
 		GUILayout.Label($"<i><b>{feature.Description}</b></i>\n", DescriptionStyle);
 
+		_settingsScroll = GUILayout.BeginScrollView(_settingsScroll, GUILayout.Width(370f), GUILayout.Height(Mathf.Max(180f, Screen.height * 0.65f)));
 		foreach (var property in orderedProperties)
 			RenderFeatureProperty(feature, property);
+		GUILayout.EndScrollView();
 
 		GUILayout.EndVertical();
 	}

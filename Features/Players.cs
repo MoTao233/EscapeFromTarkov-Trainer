@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using EFT.CameraControl;
-using EFT.InventoryLogic;
 using EFT.Trainer.Configuration;
 using EFT.Trainer.Extensions;
 using EFT.Trainer.Properties;
-using EFT.Trainer.UI;
 using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -89,7 +87,7 @@ internal class Players : ToggleFeature
 	public bool ShowInfos { get; set; } = true;
 
 	[ConfigurationProperty(Order = 50)]
-	public bool ShowSkeletons { get; set; } = false;
+	public bool ShowSkeletons { get; set; } = true;
 
 	[ConfigurationProperty(Order = 51)]
 	public float SkeletonThickness { get; set; } = 2;
@@ -109,6 +107,45 @@ internal class Players : ToggleFeature
 	[ConfigurationProperty(Order = 19)]
 	public float MaximumDistance { get; set; } = 0f;
 
+	private readonly PlayerEsp _esp = new();
+	private readonly EspProjection _projection = new();
+
+	[ConfigurationProperty(Order = 11)]
+	public bool VisibleOnly { get; set; } = true;
+
+	[ConfigurationProperty(Order = 12)]
+	public bool ModernEsp { get; set; } = true;
+
+	[ConfigurationProperty(Order = 13)]
+	public bool UnifiedEspColor { get; set; } = true;
+
+	[ConfigurationProperty(Order = 14)]
+	public Color EspColor { get; set; } = new(0.396f, 0.902f, 0.863f, 1);
+
+	private float _boxFillOpacity = 0.08f;
+	[ConfigurationProperty(Order = 22)]
+	public float BoxFillOpacity
+	{
+		get => _boxFillOpacity;
+		set => _boxFillOpacity = EspGeometry.Finite(value) ? Mathf.Clamp01(value) : 0.08f;
+	}
+
+	[ConfigurationProperty(Order = 41)]
+	public bool ShowHealthBar { get; set; } = true;
+
+	[ConfigurationProperty(Order = 42)]
+	public bool ShowWeapon { get; set; } = true;
+
+	[ConfigurationProperty(Order = 43)]
+	public bool ShowDistance { get; set; } = true;
+
+	private int _espTextSize = 14;
+	[ConfigurationProperty(Order = 44)]
+	public int EspTextSize { get => _espTextSize; set => _espTextSize = Mathf.Clamp(value, 10, 28); }
+
+	[ConfigurationProperty(Order = 52)]
+	public bool ShowJoints { get; set; } = true;
+
 	private static bool _lastXRayVision = true;
 	private static bool _lastShowCharms = true;
 
@@ -120,7 +157,10 @@ internal class Players : ToggleFeature
 	{
 		var snapshot = GameState.Current;
 		if (snapshot == null)
+		{
+			_esp.Clear();
 			return;
+		}
 
 		if (snapshot.MapMode)
 			return;
@@ -129,7 +169,10 @@ internal class Players : ToggleFeature
 
 		var player = snapshot.LocalPlayer;
 		if (player == null)
+		{
+			_esp.Clear();
 			return;
+		}
 
 		var camera = snapshot.Camera;
 		if (camera == null)
@@ -145,11 +188,17 @@ internal class Players : ToggleFeature
 
 			if (cache.Count > 0)
 				ResetShaders(cache);
+			_esp.Clear();
 
 			return;
 		}
 
 		var isAiming = AimingCheck(camera, player);
+		if (Event.current.type == EventType.Repaint)
+		{
+			_projection.Configure(camera, isAiming ? _opticCamera : null, _scopeParameters.center, _scopeParameters.radius);
+			_esp.BeginFrame(_projection, player);
+		}
 
 		foreach (var ennemy in hostiles)
 		{
@@ -162,123 +211,21 @@ internal class Players : ToggleFeature
 			if (ShowCharms)
 				SetShaders(ennemy, GameState.OutlineShader, playerColors.Color, borderColor, cache);
 
-			var position = ennemy.Transform.position;
-			var screenPosition = isAiming ? ScopePointToScreenPoint(camera, position) : camera.WorldPointToVisibleScreenPoint(position);
-			if (screenPosition == Vector2.zero)
+			if (Event.current.type != EventType.Repaint)
 				continue;
 
-			var distance = Mathf.Round(Vector3.Distance(camera.transform.position, position));
-			if (MaximumDistance > 0 && distance > MaximumDistance)
-				continue;
-
-			var playerBones = ennemy.PlayerBones;
-			if (playerBones == null)
-				continue;
-
-			var headScreenPosition = isAiming
-				? ScopePointToScreenPoint(camera, playerBones.Head.position)
-				: camera.WorldPointToVisibleScreenPoint(playerBones.Head.position);
-			var leftShoulderScreenPosition = isAiming
-				? ScopePointToScreenPoint(camera, playerBones.LeftShoulder.position)
-				: camera.WorldPointToVisibleScreenPoint(playerBones.LeftShoulder.position);
-
-			if (headScreenPosition == Vector2.zero || leftShoulderScreenPosition == Vector2.zero)
-				continue;
-
-			if (ShowShootable)
-			{
-				var bonesToCheck = GetBonesToCheck(playerBones);
-				borderColor = bonesToCheck.Any(bone => IsTransformVisibleCached(bone.transform, camera.IsTransformVisible))
-					? ShootableColors.BorderColor
-					: ShowNotShootable ? NotShootableColors.BorderColor : playerColors.BorderColor;
-
-				if (ShowSkeletons)
-				{
-					foreach (var bone in bonesToCheck)
-					{
-						var bonesColor = IsTransformVisibleCached(bone.transform, camera.IsTransformVisible) ? ShootableColors.Color : ShowNotShootable ? NotShootableColors.Color : playerColors.Color;
-						Bones.RenderBones(ennemy, bone.bones, SkeletonThickness, bonesColor, camera, isAiming);
-					}
-
-					var color = IsTransformVisibleCached(bonesToCheck[0].transform, camera.IsTransformVisible) ? ShootableColors.Color : ShowNotShootable ? NotShootableColors.Color : playerColors.Color;
-					Bones.RenderHead(ennemy, SkeletonThickness, color, camera, isAiming);
-					if (distance < 75f)
-						Bones.RenderFingers(ennemy, SkeletonThickness, color, camera, isAiming);
-				}
-
-				ClearTransformCache();
-			}
-			else if (ShowSkeletons)
-				Bones.RenderBones(ennemy, SkeletonThickness, playerColors.Color, camera, isAiming, distance);
-
-			var heightOffset = Mathf.Abs(headScreenPosition.y - leftShoulderScreenPosition.y);
-
-			var boxHeight = Mathf.Abs(headScreenPosition.y - screenPosition.y) + heightOffset * 3f;
-			var boxWidth = boxHeight * 0.62f;
-
-			var boxPositionX = screenPosition.x - boxWidth / 2f;
-			var boxPositionY = headScreenPosition.y - heightOffset * 2f;
-
-			if (ShowBoxes)
-				Render.DrawBox(boxPositionX, boxPositionY, boxWidth, boxHeight, BoxThickness, borderColor);
-
-			var ennemyHealthController = ennemy.HealthController;
-			var ennemyHandController = ennemy.HandsController;
-
-			if (!ShowInfos || ennemyHealthController is not { IsAlive: true })
-				continue;
-
-			var bodyPartHealth = ennemyHealthController.GetBodyPartHealth(EBodyPart.Common);
-			var currentPlayerHealth = bodyPartHealth.Current;
-			var maximumPlayerHealth = bodyPartHealth.Maximum;
-
-			var weaponText = ennemyHandController != null && ennemyHandController.Item is Weapon weapon ? weapon.ShortName.Localized() : string.Empty;
-			var distanceText = string.Format(Strings.FeaturePointOfInterestsDistanceFormat, distance);
-			var infoText = string.Format(Strings.FeaturePlayersFormat, weaponText, Mathf.Round(currentPlayerHealth * 100 / maximumPlayerHealth), distanceText).Trim();
-
-			Render.DrawString(new Vector2(boxPositionX, boxPositionY - 20f), infoText, playerColors.InfoColor, false);
+			var previousColor = GUI.color;
+			try { _esp.Draw(ennemy, this, playerColors); }
+			finally { GUI.color = previousColor; }
 		}
 	}
 
-	private static (Transform transform, string[] bones)[] GetBonesToCheck(PlayerBones playerBones)
-	{
-		return
-		[
-			(playerBones.Head.Original.transform, [Bones.Neck, Bones.Head]),
-			(playerBones.Neck.transform, [Bones.RCollarbone, Bones.Spine3, Bones.LCollarbone, Bones.Spine3, Bones.Spine3, Bones.Neck]),
-			(playerBones.Spine1.transform, [Bones.Pelvis, Bones.Spine1, Bones.Spine1, Bones.Spine2, Bones.Spine2, Bones.Spine3]),
-			(playerBones.Upperarms[0].transform, [Bones.LCollarbone, Bones.LForearm1, Bones.LForearm1, Bones.LForearm2]),
-			(playerBones.Upperarms[1].transform, [Bones.RCollarbone, Bones.RForearm1, Bones.RForearm1, Bones.RForearm2]),
-			(playerBones.Forearms[0].transform, [Bones.LForearm2, Bones.LForearm3, Bones.LForearm3, Bones.LPalm]),
-			(playerBones.Forearms[1].transform, [Bones.RForearm2, Bones.RForearm3, Bones.RForearm3, Bones.RPalm]),
-			(playerBones.LeftThigh1.Original.transform, [Bones.Pelvis, Bones.LThigh1, Bones.LThigh1, Bones.LThigh2]),
-			(playerBones.RightThigh1.Original.transform, [Bones.Pelvis, Bones.RThigh1, Bones.RThigh1, Bones.RThigh2]),
-			(playerBones.LeftThigh2.Original.transform, [Bones.LThigh2, Bones.LCalf, Bones.LCalf, Bones.LFoot, Bones.LFoot, Bones.LToe]),
-			(playerBones.RightThigh2.Original.transform, [Bones.RThigh2, Bones.RCalf, Bones.RCalf, Bones.RFoot, Bones.RFoot, Bones.RToe])
-		];
-	}
-
-	private readonly Dictionary<Transform, bool> _cache = [];
-
-	private bool IsTransformVisibleCached(Transform value, Func<Transform, bool> isVisibleFunc)
-	{
-		if (_cache.TryGetValue(value, out bool isVisible))
-		{
-			return isVisible;
-		}
-
-		isVisible = isVisibleFunc(value);
-		_cache[value] = isVisible;
-		return isVisible;
-	}
-
-	private void ClearTransformCache()
-	{
-		_cache.Clear();
-	}
+	[UsedImplicitly]
+	private void OnDestroy() => _esp.Dispose();
 
 	private static bool AimingCheck(Camera camera, Player player)
 	{
+		_scopeParameters = default;
 		var handsController = player.HandsController;
 		if (handsController == null)
 			return false;
@@ -294,22 +241,16 @@ internal class Players : ToggleFeature
 		if (aimingMod.ScopesCount <= 0)
 			return false;
 
-		var zoom = aimingMod.GetCurrentOpticZoom();
-		var isAiming = handsController.IsAiming;
+		if (!handsController.IsAiming || aimingMod.GetCurrentOpticZoom() <= 1)
+			return false;
 
-		if (isAiming && zoom <= 1)
-			isAiming = false;
+		if (_opticCamera == null)
+			_opticCamera = Camera.allCameras.FirstOrDefault(c => c.name == "BaseOpticCamera(Clone)");
+		if (_opticCamera == null)
+			return false;
 
-		var currentOptic = weaponAnimation.HandsContainer.Weapon.GetComponentInChildren<OpticSight>();
-		if (isAiming && currentOptic != null)
-			GetScopeParameters(camera, currentOptic);
-
-		if (_opticCamera != null)
-			return isAiming;
-
-		_opticCamera = Camera.allCameras.FirstOrDefault(c => c.name == "BaseOpticCamera(Clone)");
-
-		return isAiming;
+		var currentOptic = weaponAnimation.HandsContainer?.Weapon?.GetComponentInChildren<OpticSight>();
+		return currentOptic != null && GetScopeParameters(camera, currentOptic);
 	}
 
 	public PlayerColor GetPlayerColors(Player player)
@@ -451,10 +392,14 @@ internal class Players : ToggleFeature
 		return clampedPoint;
 	}
 
-	private static void GetScopeParameters(Camera camera, OpticSight currentOptic)
+	private static bool GetScopeParameters(Camera camera, OpticSight currentOptic)
 	{
+		if (currentOptic.LensRenderer == null)
+			return false;
+		var lensMesh = currentOptic.LensRenderer.GetComponent<MeshFilter>()?.sharedMesh;
+		if (lensMesh == null)
+			return false;
 		var opticTransform = currentOptic.LensRenderer.transform;
-		var lensMesh = currentOptic.LensRenderer.GetComponent<MeshFilter>().mesh;
 		var lensUpperRight = opticTransform.TransformPoint(lensMesh.bounds.max);
 		var lensUpperLeft = opticTransform.TransformPoint(new Vector3(lensMesh.bounds.min.x, 0, lensMesh.bounds.max.z));
 
@@ -462,5 +407,6 @@ internal class Players : ToggleFeature
 		var lensUpperLeft3D = camera.WorldPointToScreenPoint(lensUpperLeft);
 		_scopeParameters.radius = Vector2.Distance(lensUpperRight3D, lensUpperLeft3D) / 2;
 		_scopeParameters.center = camera.WorldPointToScreenPoint(opticTransform.position);
+		return EspGeometry.Finite(_scopeParameters.radius) && _scopeParameters.radius > 0;
 	}
 }

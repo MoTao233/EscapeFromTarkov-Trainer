@@ -74,7 +74,7 @@ internal class Commands : FeatureRenderer
 		if (PropertyDisplays.TryGetValue(propertyName, out var value))
 			return value;
 
-		return $"!! [{propertyName}] !!"; // missing translation in Strings.resx
+		return Strings.ResourceManager.GetString($"Property{propertyName}", Strings.Culture) ?? $"!! [{propertyName}] !!";
 	}
 
 	private void RegisterCommands()

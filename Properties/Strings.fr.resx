@@ -961,4 +961,34 @@ Les couleurs sont stockées sous la forme d'un tableau de valeurs flottantes 'RG
   <data name="FeatureAirDropDescription" xml:space="preserve">
     <value>Déclenche un largage aérien à l'endroit où se trouve le joueur.</value>
   </data>
+  <data name="PropertyVisibleOnly" xml:space="preserve">
+    <value>Parties visibles (2D)</value>
+  </data>
+  <data name="PropertyModernEsp" xml:space="preserve">
+    <value>Style ESP moderne</value>
+  </data>
+  <data name="PropertyUnifiedEspColor" xml:space="preserve">
+    <value>Couleur ESP unique</value>
+  </data>
+  <data name="PropertyEspColor" xml:space="preserve">
+    <value>Couleur ESP</value>
+  </data>
+  <data name="PropertyBoxFillOpacity" xml:space="preserve">
+    <value>Opacité du cadre (0–1)</value>
+  </data>
+  <data name="PropertyShowHealthBar" xml:space="preserve">
+    <value>Barre de vie</value>
+  </data>
+  <data name="PropertyShowWeapon" xml:space="preserve">
+    <value>Arme au-dessus</value>
+  </data>
+  <data name="PropertyShowDistance" xml:space="preserve">
+    <value>Distance en dessous</value>
+  </data>
+  <data name="PropertyEspTextSize" xml:space="preserve">
+    <value>Taille du texte ESP</value>
+  </data>
+  <data name="PropertyShowJoints" xml:space="preserve">
+    <value>Points articulaires</value>
+  </data>
 </root>

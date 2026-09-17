@@ -14,7 +14,7 @@
     <TargetFrameworkProfile />
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <EFTBasePath>C:\Battlestate Games\sptarkov</EFTBasePath>
+    <EFTBasePath Condition="'$(EFTBasePath)' == ''">C:\Battlestate Games\sptarkov</EFTBasePath>
     <EFTDataPath>$(EFTBasePath)\EscapeFromTarkov_Data</EFTDataPath>
     <EFTManagedPath>$(EFTDataPath)\Managed</EFTManagedPath>
   </PropertyGroup>
@@ -193,6 +193,10 @@
     <Compile Include="Features\NoFlash.cs" />
     <Compile Include="Features\NoVisor.cs" />
     <Compile Include="Features\Players.cs" />
+    <Compile Include="Features\EspGeometry.cs" />
+    <Compile Include="Features\EspProjection.cs" />
+    <Compile Include="Features\EspVisibility.cs" />
+    <Compile Include="Features\PlayerEsp.cs" />
     <Compile Include="Features\PointOfInterest.cs" />
     <Compile Include="Features\PointOfInterests.cs" />
     <Compile Include="Features\Quests.cs" />
@@ -237,6 +241,7 @@
     <Compile Include="UI\ColorPicker.cs" />
     <Compile Include="UI\ColorUtil.cs" />
     <Compile Include="UI\Render.cs" />
+    <Compile Include="UI\EspDrawing.cs" />
     <Compile Include="EFTTarget.cs" />
     <Compile Include="KnownTemplateIds.cs" />
     <Compile Include="Loader.cs" />
@@ -251,18 +256,20 @@
       <LastGenOutput>Strings.fr.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Properties\Strings.resx">
+    <EmbeddedResource Include="Properties\Strings.resx" Condition="'$(TrainerLanguage)' != 'zh-cn'">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Strings.zh-cn.resx">
+      <WithCulture Condition="'$(TrainerLanguage)' == 'zh-cn'">false</WithCulture>
+      <LogicalName Condition="'$(TrainerLanguage)' == 'zh-cn'">EFT.Trainer.Properties.Strings.resources</LogicalName>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.zh-cn.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(EFTManagedPath)"</PostBuildEvent>
+    <PostBuildEvent Condition="'$(DeployToGame)' == 'true'">copy /Y "$(TargetPath)" "$(EFTManagedPath)"</PostBuildEvent>
   </PropertyGroup>
 </Project>
