@@ -32,18 +32,24 @@ internal sealed class Highlights : ToggleFeature
 	[ConfigurationProperty(Order = 17)] public float ItemOutlineWidth { get => _itemOutlineWidth; set => _itemOutlineWidth = Clamp(value, 1, 5, 2); }
 	[ConfigurationProperty(Order = 20)] public float HighlightScreenRadius { get => _screenRadius; set => _screenRadius = Clamp(value, 0, 10000, 0); }
 	[ConfigurationProperty(Order = 21)] public int MaximumItemHighlights { get => _maximumItemHighlights; set => _maximumItemHighlights = Mathf.Clamp(value, 1, 256); }
+	[ConfigurationProperty(Order = 30)] public bool HighlightDoors { get; set; } = true;
+	[ConfigurationProperty(Order = 31)] public Color DoorOutlineColor { get; set; } = new(1, 0.75f, 0.25f, 1);
+	private float _doorDistance = 10, _doorFillOpacity;
+	[ConfigurationProperty(Order = 32)] public float DoorHighlightDistance { get => _doorDistance; set => _doorDistance = Clamp(value, 1, 100, 10); }
+	[ConfigurationProperty(Order = 33)] public float DoorFillOpacity { get => _doorFillOpacity; set => _doorFillOpacity = Clamp(value, 0, 1, 0); }
 
 	private sealed class PlayerEntry
 	{
 		public readonly HighlightTarget Target = new();
 		public float NextRefresh;
 	}
-	private sealed class ItemEntry(Component owner, bool container)
+	private enum WorldTargetKind { Item, Container, Door }
+	private sealed class ItemEntry(Component owner, WorldTargetKind kind)
 	{
 		public readonly Component Owner = owner;
-		public readonly bool Container = container;
+		public readonly WorldTargetKind Kind = kind;
 		public readonly HighlightTarget Target = new();
-		public float Distance;
+		public float Distance, NextRefresh;
 	}
 	private readonly Dictionary<Player, PlayerEntry> _playerCache = [];
 	private readonly Dictionary<Component, ItemEntry> _itemCache = [];
@@ -53,13 +59,14 @@ internal sealed class Highlights : ToggleFeature
 	private readonly List<Renderer> _renderers = [];
 	private readonly List<ItemEntry> _nearbyItems = [];
 	private readonly List<HighlightTarget> _playerTargets = [], _itemTargets = [];
-	private readonly List<LootableContainer> _containers = [];
+	private readonly List<WorldInteractiveObject> _interactives = [];
+	private readonly HighlightHierarchy _hierarchy = new();
 	private GameWorld? _world;
 	private Players? _players;
 	private HighlightRenderer? _renderer;
 	private AssetBundle? _bundle;
 	private bool _loadAttempted, _failed;
-	private float _nextItems, _nextContainers;
+	private float _nextItems, _nextInteractives;
 	private int _preparedFrame = -1;
 	private Camera? _mainCamera;
 	private float _nextStatus, _nextCameraStatus;
@@ -184,7 +191,7 @@ internal sealed class Highlights : ToggleFeature
 	private void PrepareItems(GameWorld world)
 	{
 		_itemTargets.Clear();
-		if (!HighlightItems && !HighlightContainers) return;
+		if (!HighlightItems && !HighlightContainers && !HighlightDoors) return;
 		if (Time.unscaledTime >= _nextItems)
 		{
 			_seenItems.Clear();
@@ -197,19 +204,32 @@ internal sealed class Highlights : ToggleFeature
 				{
 					var item = loot.GetByIndex(i);
 					if (item is Corpse || !item.IsValid() || !item.isActiveAndEnabled) continue;
-					ConsiderItem(item, false, position);
+					ConsiderItem(item, WorldTargetKind.Item, position);
 				}
 			}
-			if (HighlightContainers)
+			if (HighlightContainers || HighlightDoors)
 			{
-				if (Time.unscaledTime >= _nextContainers)
+				if (Time.unscaledTime >= _nextInteractives)
 				{
-					_containers.Clear();
-					_containers.AddRange(LocationScene.GetAllObjects<LootableContainer>());
-					_nextContainers = Time.unscaledTime + 10;
+					// LocationScene only contains objects serialized into its registry; dynamic
+					// containers may not be registered there. Scan live objects at a low frequency.
+					_interactives.Clear();
+					_interactives.AddRange(FindObjectsOfType<WorldInteractiveObject>());
+					_nextInteractives = Time.unscaledTime + 10;
 				}
-				foreach (var container in _containers)
-					if (container != null && container.isActiveAndEnabled) ConsiderItem(container, true, position);
+				foreach (var interactive in _interactives)
+				{
+					if (interactive == null || !interactive.isActiveAndEnabled) continue;
+					if (HighlightContainers && interactive is LootableContainer)
+						ConsiderItem(interactive, WorldTargetKind.Container, position);
+					else if (HighlightDoors && interactive is Door)
+						ConsiderItem(interactive, WorldTargetKind.Door, position);
+				}
+				// Registered loot also includes containers spawned between the scene scans.
+				if (HighlightContainers)
+					foreach (var loot in world.LootList)
+						if (loot is LootableContainer container && container.isActiveAndEnabled)
+							ConsiderItem(container, WorldTargetKind.Container, position);
 			}
 			_removedItems.Clear();
 			foreach (var pair in _itemCache)
@@ -220,28 +240,42 @@ internal sealed class Highlights : ToggleFeature
 		}
 		foreach (var entry in _nearbyItems)
 		{
-			if (entry.Owner == null || !entry.Owner.gameObject.activeInHierarchy || (entry.Container ? !HighlightContainers : !HighlightItems)) continue;
-			var color = entry.Container ? ContainerOutlineColor : ItemOutlineColor;
+			if (entry.Owner == null || !entry.Owner.gameObject.activeInHierarchy || !KindEnabled(entry.Kind)) continue;
+			if (entry.Owner is Behaviour behaviour && !behaviour.isActiveAndEnabled) continue;
+			var color = entry.Kind == WorldTargetKind.Door ? DoorOutlineColor : entry.Kind == WorldTargetKind.Container ? ContainerOutlineColor : ItemOutlineColor;
 			if (entry.Owner is LootItem loot && loot.Item != null && loot.Item.QuestItem) color = QuestOutlineColor;
 			entry.Target.Edge = color;
-			entry.Target.Fill = Alpha(color, ItemFillOpacity);
-			entry.Target.MaximumDistance = ItemHighlightDistance;
+			entry.Target.Fill = Alpha(color, entry.Kind == WorldTargetKind.Door ? DoorFillOpacity : ItemFillOpacity);
+			entry.Target.MaximumDistance = entry.Kind == WorldTargetKind.Door ? DoorHighlightDistance : ItemHighlightDistance;
 			_itemTargets.Add(entry.Target);
 		}
 	}
 
-	private void ConsiderItem(Component owner, bool container, Vector3 position)
+	private bool KindEnabled(WorldTargetKind kind) => kind == WorldTargetKind.Door ? HighlightDoors : kind == WorldTargetKind.Container ? HighlightContainers : HighlightItems;
+
+	private void ConsiderItem(Component owner, WorldTargetKind kind, Vector3 position)
 	{
 		var distance = (owner.transform.position - position).sqrMagnitude;
-		if (distance > (ItemHighlightDistance + 3) * (ItemHighlightDistance + 3)) return;
-		_seenItems.Add(owner);
+		var maximumDistance = kind == WorldTargetKind.Door ? DoorHighlightDistance : ItemHighlightDistance;
+		if (distance > (maximumDistance + 3) * (maximumDistance + 3) || !_seenItems.Add(owner)) return;
 		if (!_itemCache.TryGetValue(owner, out var entry))
 		{
-			entry = new ItemEntry(owner, container);
-			_renderers.Clear();
-			owner.GetComponentsInChildren(true, _renderers);
-			entry.Target.Refresh(_renderers);
+			entry = new ItemEntry(owner, kind);
 			_itemCache.Add(owner, entry);
+		}
+		if (Time.unscaledTime >= entry.NextRefresh)
+		{
+			_renderers.Clear();
+			if (owner is LootableContainer container)
+				_hierarchy.Collect<InteractableObject>(container, container.GameObjectsToDestroy, true, 6, _renderers);
+			else if (owner is Door door)
+				// The moving leaf is owned by Door; its parent may be the entire wall.
+				_hierarchy.Collect<InteractableObject>(door, null, false, 8, _renderers);
+			else owner.GetComponentsInChildren(true, _renderers);
+			entry.Target.Refresh(_renderers);
+			if (entry.NextRefresh == 0)
+				Log($"Models: kind={kind}; owner={owner.name}; parent={owner.transform.parent?.name ?? "none"}; renderers={_renderers.Count}; parts={entry.Target.Parts.Count}");
+			entry.NextRefresh = Time.unscaledTime + 2;
 		}
 		entry.Distance = distance;
 		_nearbyItems.Add(entry);
@@ -295,10 +329,10 @@ internal sealed class Highlights : ToggleFeature
 	private void ClearWorld()
 	{
 		_renderer?.Detach();
-		_playerCache.Clear(); _itemCache.Clear(); _containers.Clear(); _nearbyItems.Clear();
+		_playerCache.Clear(); _itemCache.Clear(); _interactives.Clear(); _nearbyItems.Clear();
 		_playerTargets.Clear(); _itemTargets.Clear(); _seenItems.Clear();
 		_mainCamera = null;
-		_nextItems = _nextContainers = 0;
+		_nextItems = _nextInteractives = 0;
 		_preparedFrame = -1;
 		_failed = false;
 	}

@@ -17,6 +17,7 @@ public static class TrainerGraphicsChecks
     public static void Run()
     {
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        _checks += TrainerHierarchyChecks.Run();
         var bundle = AssetBundle.LoadFromFile(Path.Combine(TrainerShaderBuild.Output, "trainer-highlights"));
         var mask = bundle.LoadAsset<Shader>("assets/trainer/highlightmask.shader");
         var composite = bundle.LoadAsset<Shader>("assets/trainer/highlightcomposite.shader");

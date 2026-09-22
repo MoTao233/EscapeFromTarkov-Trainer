@@ -1007,7 +1007,7 @@ Colors are stored as an array of 'RGBA' floats</value>
     <value>Outlines and fill</value>
   </data>
   <data name="FeatureHighlightsDescription" xml:space="preserve">
-    <value>Character settings are on the Players page. Nearby loot and containers use separate colors. Screen radius 0 means the entire view.</value>
+    <value>Character settings are on the Players page. Loot, containers and doors have separate colors. Doors default to outline only. Screen radius 0 means the entire view.</value>
   </data>
   <data name="PropertyHighlightItems" xml:space="preserve">
     <value>Outline loose loot</value>
@@ -1031,12 +1031,24 @@ Colors are stored as an array of 'RGBA' floats</value>
     <value>Loot fill opacity (0-1)</value>
   </data>
   <data name="PropertyItemOutlineWidth" xml:space="preserve">
-    <value>Loot outline width (1-5 px)</value>
+    <value>Loot, container and door outline width (1-5 px)</value>
   </data>
   <data name="PropertyHighlightScreenRadius" xml:space="preserve">
     <value>Screen radius (px, 0=full)</value>
   </data>
   <data name="PropertyMaximumItemHighlights" xml:space="preserve">
-    <value>Maximum outlined items</value>
+    <value>Maximum outlined loot, containers and doors</value>
+  </data>
+  <data name="PropertyHighlightDoors" xml:space="preserve">
+    <value>Outline doors</value>
+  </data>
+  <data name="PropertyDoorOutlineColor" xml:space="preserve">
+    <value>Door color</value>
+  </data>
+  <data name="PropertyDoorHighlightDistance" xml:space="preserve">
+    <value>Door distance (m)</value>
+  </data>
+  <data name="PropertyDoorFillOpacity" xml:space="preserve">
+    <value>Door fill opacity (0=outline only)</value>
   </data>
 </root>

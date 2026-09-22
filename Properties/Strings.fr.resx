@@ -1007,7 +1007,7 @@ Les couleurs sont stockées sous la forme d'un tableau de valeurs flottantes 'RG
     <value>Contours et remplissage</value>
   </data>
   <data name="FeatureHighlightsDescription" xml:space="preserve">
-    <value>Réglages des personnages dans Joueurs. Objets et conteneurs proches : couleurs séparées. Rayon 0 : écran entier.</value>
+    <value>Réglages des personnages dans Joueurs. Objets, conteneurs et portes : couleurs séparées. Portes sans remplissage par défaut. Rayon 0 : écran entier.</value>
   </data>
   <data name="PropertyHighlightItems" xml:space="preserve">
     <value>Contours des objets</value>
@@ -1031,12 +1031,24 @@ Les couleurs sont stockées sous la forme d'un tableau de valeurs flottantes 'RG
     <value>Opacité des objets (0–1)</value>
   </data>
   <data name="PropertyItemOutlineWidth" xml:space="preserve">
-    <value>Épaisseur objets (1–5 px)</value>
+    <value>Épaisseur objets, conteneurs et portes (1–5 px)</value>
   </data>
   <data name="PropertyHighlightScreenRadius" xml:space="preserve">
     <value>Rayon écran (px, 0=tout)</value>
   </data>
   <data name="PropertyMaximumItemHighlights" xml:space="preserve">
-    <value>Nombre maximal d’objets</value>
+    <value>Maximum d’objets, conteneurs et portes</value>
+  </data>
+  <data name="PropertyHighlightDoors" xml:space="preserve">
+    <value>Contours des portes</value>
+  </data>
+  <data name="PropertyDoorOutlineColor" xml:space="preserve">
+    <value>Couleur des portes</value>
+  </data>
+  <data name="PropertyDoorHighlightDistance" xml:space="preserve">
+    <value>Distance des portes (m)</value>
+  </data>
+  <data name="PropertyDoorFillOpacity" xml:space="preserve">
+    <value>Opacité des portes (0=contour seul)</value>
   </data>
 </root>

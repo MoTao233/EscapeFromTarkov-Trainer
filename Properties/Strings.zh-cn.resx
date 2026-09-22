@@ -1008,7 +1008,7 @@
     <value>描边与填色</value>
   </data>
   <data name="FeatureHighlightsDescription" xml:space="preserve">
-    <value>人物颜色及填色在玩家 ESP 页调整；此页控制物品、容器和共用开关。屏幕半径为 0 时覆盖整个视野。</value>
+    <value>人物颜色及填色在玩家 ESP 页调整；此页控制物品、容器、门和共用开关。门默认只描边，屏幕半径为 0 时覆盖整个视野。</value>
   </data>
   <data name="PropertyHighlightItems" xml:space="preserve">
     <value>散落物品描边</value>
@@ -1032,12 +1032,24 @@
     <value>物品填色不透明度（0–1）</value>
   </data>
   <data name="PropertyItemOutlineWidth" xml:space="preserve">
-    <value>物品边线宽度（1–5 像素）</value>
+    <value>物品、容器与门边线宽度（1–5 像素）</value>
   </data>
   <data name="PropertyHighlightScreenRadius" xml:space="preserve">
     <value>屏幕中心半径（像素，0 为全屏）</value>
   </data>
   <data name="PropertyMaximumItemHighlights" xml:space="preserve">
-    <value>最多同时描边物品数</value>
+    <value>物品、容器与门描边总上限</value>
+  </data>
+  <data name="PropertyHighlightDoors" xml:space="preserve">
+    <value>门描边</value>
+  </data>
+  <data name="PropertyDoorOutlineColor" xml:space="preserve">
+    <value>门颜色</value>
+  </data>
+  <data name="PropertyDoorHighlightDistance" xml:space="preserve">
+    <value>门描边距离（米）</value>
+  </data>
+  <data name="PropertyDoorFillOpacity" xml:space="preserve">
+    <value>门填色不透明度（0 为只描边）</value>
   </data>
 </root>

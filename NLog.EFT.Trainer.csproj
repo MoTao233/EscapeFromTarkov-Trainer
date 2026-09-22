@@ -205,6 +205,7 @@
     <Compile Include="Features\SceneDumper.cs" />
     <Compile Include="Features\Highlights.cs" />
     <Compile Include="Rendering\HighlightTarget.cs" />
+    <Compile Include="Rendering\HighlightHierarchy.cs" />
     <Compile Include="Rendering\HighlightGeometry.cs" />
     <Compile Include="Rendering\HighlightRenderer.cs" />
     <Compile Include="Features\Speed.cs" />
