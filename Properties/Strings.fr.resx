@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -636,6 +636,9 @@ Les couleurs sont stockées sous la forme d'un tableau de valeurs flottantes 'RG
   <data name="PropertyBearColors" xml:space="preserve">
     <value>Couleurs Bear</value>
   </data>
+  <data name="PropertyBodyTint" xml:space="preserve">
+    <value>Opacité du remplissage (0–1)</value>
+  </data>
   <data name="PropertyBorderColor" xml:space="preserve">
     <value>Couleur bordure</value>
   </data>
@@ -740,6 +743,15 @@ Les couleurs sont stockées sous la forme d'un tableau de valeurs flottantes 'RG
   </data>
   <data name="PropertyNotShootableColors" xml:space="preserve">
     <value>Couleurs des non-cibles</value>
+  </data>
+  <data name="PropertyOccludedColor" xml:space="preserve">
+    <value>Couleur occultée</value>
+  </data>
+  <data name="PropertyOccludedOpacity" xml:space="preserve">
+    <value>Opacité occultée (0-1)</value>
+  </data>
+  <data name="PropertyOutlineScale" xml:space="preserve">
+    <value>Échelle du contour</value>
   </data>
   <data name="PropertyRadarBackground" xml:space="preserve">
     <value>Arrière-plan du radar</value>
@@ -990,5 +1002,41 @@ Les couleurs sont stockées sous la forme d'un tableau de valeurs flottantes 'RG
   </data>
   <data name="PropertyShowJoints" xml:space="preserve">
     <value>Points articulaires</value>
+  </data>
+  <data name="FeatureHighlightsName" xml:space="preserve">
+    <value>Contours et remplissage</value>
+  </data>
+  <data name="FeatureHighlightsDescription" xml:space="preserve">
+    <value>Réglages des personnages dans Joueurs. Objets et conteneurs proches : couleurs séparées. Rayon 0 : écran entier.</value>
+  </data>
+  <data name="PropertyHighlightItems" xml:space="preserve">
+    <value>Contours des objets</value>
+  </data>
+  <data name="PropertyHighlightContainers" xml:space="preserve">
+    <value>Contours des conteneurs</value>
+  </data>
+  <data name="PropertyItemOutlineColor" xml:space="preserve">
+    <value>Couleur des objets</value>
+  </data>
+  <data name="PropertyContainerOutlineColor" xml:space="preserve">
+    <value>Couleur des conteneurs</value>
+  </data>
+  <data name="PropertyQuestOutlineColor" xml:space="preserve">
+    <value>Couleur des objets de quête</value>
+  </data>
+  <data name="PropertyItemHighlightDistance" xml:space="preserve">
+    <value>Distance des objets (m)</value>
+  </data>
+  <data name="PropertyItemFillOpacity" xml:space="preserve">
+    <value>Opacité des objets (0–1)</value>
+  </data>
+  <data name="PropertyItemOutlineWidth" xml:space="preserve">
+    <value>Épaisseur objets (1–5 px)</value>
+  </data>
+  <data name="PropertyHighlightScreenRadius" xml:space="preserve">
+    <value>Rayon écran (px, 0=tout)</value>
+  </data>
+  <data name="PropertyMaximumItemHighlights" xml:space="preserve">
+    <value>Nombre maximal d’objets</value>
   </data>
 </root>

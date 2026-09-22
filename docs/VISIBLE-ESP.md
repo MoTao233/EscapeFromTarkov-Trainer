@@ -1,32 +1,77 @@
 # Visible ESP / 可见视觉辅助
 
 基于 `dev-0.16.1.35392`，针对 EFT 0.16.1.35392 / SPT 3.11.x。
-人物上色、XRayVision、瞄准辅助及其他功能没有改动。本说明涉及普通二维 ESP。
+人物和物品使用独立的屏幕空间描边与半透明填色，保留模型原材质。新渲染不依赖旧的 `outline`，该资源仍供手雷功能使用。
+
+## 人物描边与填色
+
+在「玩家 ESP」中开启显示描边，并保持「描边与填色」总开关开启。
+
+| 设置 | 行为 |
+| --- | --- |
+| 显示描边（ShowCharms） | 人物描边和填色开关，与二维 ESP 分开。 |
+| X射线视野（XRayVision） | 新配置默认关闭，墙体遮挡的人物部分不显示；开启后使用遮挡填色。已有配置保留原值。 |
+| 阵营颜色 – 颜色（Color） | 可见部分内部填色。 |
+| 阵营颜色 – 边框颜色（BorderColor） | 外边线颜色。 |
+| 遮挡剪影颜色（OccludedColor） | X-Ray 开启时的内部填色。 |
+| 遮挡不透明度（OccludedOpacity） | 0–1，默认 0.55。 |
+| 人物填色不透明度（BodyTint） | 0–1，默认 0.3；0 只显示边线，1 完全覆盖底色。与颜色自身的 alpha 相乘。 |
+| 描边粗细倍率（OutlineScale） | 默认 1 对应 2 个渲染像素，实际宽度限制为 1–5 像素，不随距离膨胀。 |
+| 最大距离（MaximumDistance） | 同时限制人物二维 ESP 和人物描边，0 表示不限制。 |
+
+颜色及透明度即时更新。所有材质子网格均参与描边；身体和装备合为人物轮廓，不在每块衣服之间重复描边。人物皮肤缓存每 2 秒刷新以跟进装备变化。普通视角与开镜分别筛选和绘制，背包预览相机不参与。
+
+渲染在 `BeforeForwardAlpha` 执行，赶在 EFT 的 SSAA/DLSS 和后处理采集画面之前，避免高亮画到已经不再用于输出的缓冲区。可见/遮挡部分直接使用相机原有深度附件，Shader 不写入、不清除场景深度，也不依赖 `_CameraDepthTexture` 或物理射线。这样镂空网孔按真实几何深度显示，之后绘制的透明玻璃仍能正常叠加；开启 X-Ray 才显示实体墙后的人物。特殊材质若自身写入整片深度，仍按该材质的实际行为遮挡。
+
+## 物品与性能设置
+
+「描边与填色」页提供散落物品、可搜索容器的独立开关和颜色，任务物品单独配色。包含丢在地上的物品，不显示容器内部没有世界模型的物品；不改变物品追踪列表或二维标签设置。
+
+| 设置 | 默认及含义 |
+| --- | --- |
+| 物品描边距离 | 10 米，范围 1–100 米。 |
+| 物品填色不透明度 | 0.12，设为 0 可只看边线。 |
+| 物品边线宽度 | 2 像素，可调 1–5。 |
+| 屏幕中心半径 | 0 = 全视野；可改为 300–500 像素减少选中目标。包围盒碰到该区域就算选中，避免只检测中心点漏掉画面边缘目标。 |
+| 最多同时描边物品数 | 64，优先附近且通过视野筛选的物品。 |
+
+物品只显示可见部分。物品列表每 0.5 秒刷新，容器列表每 10 秒刷新；拾取、生成、移动后的候选列表最多有相应刷新延迟。主相机和瞄准镜各自进行包围盒、距离与屏幕范围筛选。人物和物品共用每相机一组临时纹理，空场景不申请纹理；像素扩展只覆盖目标所在的屏幕区域。不逐帧创建材质、不烘焙蒙皮网格，也不改写原模型材质或强行开启被游戏关闭的渲染器。
+
+由于尊重游戏的渲染器启用状态，X-Ray 无法保证显示已被游戏彻底停用或卸载的模型。DLSS/FSR、夜视、热成像和具体瞄具效果仍需游戏中实测；宽度以实际渲染分辨率为准。
 
 ## 构建与安装
 
-需要 Visual Studio 2022 的 MSBuild、较新的 C# 编译器，以及 .NET Framework 4.7.1 Developer Pack。
+C# 使用 Visual Studio MSBuild 和 .NET Framework 4.7.1 目标包；Shader 使用 Unity **2022.3.43f1**。项目中含已构建资源，修改 Shader 后必须重新构建：
 
 ```powershell
+.\Build-Shaders.ps1 -Test
 .\Build-Local.ps1 -GamePath E:\EFT\SPT_3114 -Language zh-cn -Test
+# 或一次执行（同时构建 Shader 并做渲染检查）
+.\Build-Local.ps1 -GamePath E:\EFT\SPT_3114 -Language zh-cn -BuildShaders -Test
 ```
 
-构建默认不写入游戏目录。中文测试包位于 `artifacts\visible-esp-zh-cn`，英文版本用 `-Language en`。
-包内仅包含修改后的训练器 DLL、安装脚本及说明，不包含游戏程序集。
+构建检查 Shader 源码和资源包哈希，阻止旧资源混入新包。Unity 图形检查使用实际打包的 Shader，在前向与延迟渲染路径检查透明度、遮挡、X-Ray、多层叠加、蒙皮网格、无 ShadowCaster 的镂空铁丝网、透明玻璃和资源清理。另有先采集再输出的后处理回归测试，以及缩小/带偏移视口的对齐检查；输出在 `artifacts/shaders`。这些是独立测试场景，不代表真实 DLSS 算法或游戏实测。
 
-退出游戏后，在测试包目录运行：
+中文包位于 `artifacts/visible-esp-zh-cn`，英文版本用 `-Language en`。包内包含 DLL、`trainer-highlights`、资源校验信息、安装脚本和说明，不包含游戏程序集。
+
+退出游戏后运行：
 
 ```powershell
-.\Install-Local.ps1 -GamePath E:\EFT\SPT_3114
+.\artifacts\visible-esp-zh-cn\Install-Local.ps1 -GamePath E:\EFT\SPT_3114
 ```
 
-这会备份并替换已经安装的 `EscapeFromTarkov_Data\Managed\NLog.EFT.Trainer.dll`。
-备份位于游戏目录的 `TrainerBackups\时间戳`。回退时退出游戏，将备份 DLL 复制回原位置。
-不覆盖你的配置、上色资源、BepInEx 插件或游戏存档。
+安装器将备份、替换并校验这两个文件；安装失败会恢复之前状态：
+
+- `EscapeFromTarkov_Data/Managed/NLog.EFT.Trainer.dll`
+- `EscapeFromTarkov_Data/trainer-highlights`
+
+备份位于 `TrainerBackups/时间戳`，`installation.json` 记录目标和原文件是否存在。回退时退出游戏，将备份中的 DLL 和资源复制回对应位置；若之前没有新资源，可删除该单个资源文件。原 `outline`、BepInEx 加载插件、配置和存档保持原样。
+
+启动后独立日志写入 `<游戏>/trainer-highlights.log`（经 MO2 启动时也可能位于其 overwrite 目录）。进入战局后应记录 `Shaders loaded; event=BeforeForwardAlpha`。每 5 秒记录一次目标收集状态和相机绘制统计，包括开关、相机、尺寸、视口、候选数量、选中数量和绘制次数；日志超过 1 MiB 后轮换。EFT 可能屏蔽普通 `Debug.Log`，因此排错以此文件为准。缺失资源、收集或渲染异常会记录明确错误。退出时先按 Unity 原生对象状态检查资源，避免对已经释放的 AssetBundle 再次 Unload。
 
 ## 设置
 
-右 Alt 打开训练器，进入玩家 ESP 页。设置区域可以滚动。
+Insert 打开训练器，进入玩家 ESP 页。设置区域可以滚动。
 
 | 设置 | 行为 |
 | --- | --- |
@@ -63,4 +108,4 @@ XRayVision 仍仅控制人物上色，与 VisibleOnly 相互独立。
 6. 调整填充、颜色、字号、线宽，保存、重启后确认保留。
 7. XRayVision 开关仍按原样控制上色。
 
-自动测试只验证裁剪几何及异常数据处理，不能替代上述游戏内验收。
+ESP 自动测试验证裁剪几何及异常数据处理，描边另有 Unity 图形检查；二者均不能替代上述游戏内验收。

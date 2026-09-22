@@ -211,3 +211,15 @@ GeneratedArtifacts/
 _Pvt_Extensions/
 ModelManifest.xml
 /libs/*.dll
+
+# Unity shader build workspace (source shaders and Editor scripts are tracked)
+ShaderProject/Library/
+ShaderProject/Temp/
+ShaderProject/Logs/
+ShaderProject/obj/
+ShaderProject/UserSettings/
+ShaderProject/Assets/Runtime/
+ShaderProject/ProjectSettings/*
+!ShaderProject/ProjectSettings/ProjectVersion.txt
+!ShaderProject/Packages/manifest.json
+ShaderProject/Packages/packages-lock.json

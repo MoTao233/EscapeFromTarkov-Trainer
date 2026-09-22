@@ -1,5 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using EFT.CameraControl;
 using EFT.Trainer.Configuration;
@@ -7,7 +5,6 @@ using EFT.Trainer.Extensions;
 using EFT.Trainer.Properties;
 using JetBrains.Annotations;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 #nullable enable
 
@@ -22,6 +19,9 @@ public class PlayerColor(Color color, Color borderColor, Color infoColor) : IFea
 	public Color BorderColor { get; set; } = borderColor;
 
 	[ConfigurationProperty(Order = 3)]
+	public Color OccludedColor { get; set; } = color;
+
+	[ConfigurationProperty(Order = 4)]
 	public Color InfoColor { get; set; } = infoColor;
 
 	public string Name => nameof(PlayerColor);
@@ -81,7 +81,31 @@ internal class Players : ToggleFeature
 	public bool ShowCharms { get; set; } = true;
 
 	[ConfigurationProperty(Order = 31)]
-	public bool XRayVision { get; set; } = true;
+	public bool XRayVision { get; set; } = false;
+
+	private float _occludedOpacity = 0.55f;
+	[ConfigurationProperty(Order = 32)]
+	public float OccludedOpacity
+	{
+		get => _occludedOpacity;
+		set => _occludedOpacity = EspGeometry.Finite(value) ? Mathf.Clamp01(value) : 0.55f;
+	}
+
+	private float _bodyTint = 0.3f;
+	[ConfigurationProperty(Order = 33)]
+	public float BodyTint
+	{
+		get => _bodyTint;
+		set => _bodyTint = EspGeometry.Finite(value) ? Mathf.Clamp01(value) : 0.3f;
+	}
+
+	private float _outlineScale = 1f;
+	[ConfigurationProperty(Order = 34)]
+	public float OutlineScale
+	{
+		get => _outlineScale;
+		set => _outlineScale = EspGeometry.Finite(value) ? Mathf.Clamp(value, 0.1f, 5f) : 1f;
+	}
 
 	[ConfigurationProperty(Order = 40)]
 	public bool ShowInfos { get; set; } = true;
@@ -146,9 +170,6 @@ internal class Players : ToggleFeature
 	[ConfigurationProperty(Order = 52)]
 	public bool ShowJoints { get; set; } = true;
 
-	private static bool _lastXRayVision = true;
-	private static bool _lastShowCharms = true;
-
 	private static Camera? _opticCamera;
 	private static (Vector2 center, float radius) _scopeParameters;
 
@@ -178,18 +199,9 @@ internal class Players : ToggleFeature
 		if (camera == null)
 			return;
 
-		var cacheComponent = player.GetOrAddComponent<ShaderCache>();
-		var cache = cacheComponent.Cache;
-
-		if (!Enabled || XRayVision != _lastXRayVision || ShowCharms != _lastShowCharms)
+		if (!Enabled)
 		{
-			_lastXRayVision = XRayVision;
-			_lastShowCharms = ShowCharms;
-
-			if (cache.Count > 0)
-				ResetShaders(cache);
 			_esp.Clear();
-
 			return;
 		}
 
@@ -206,10 +218,6 @@ internal class Players : ToggleFeature
 				continue;
 
 			var playerColors = GetPlayerColors(ennemy);
-			var borderColor = playerColors.BorderColor;
-
-			if (ShowCharms)
-				SetShaders(ennemy, GameState.OutlineShader, playerColors.Color, borderColor, cache);
 
 			if (Event.current.type != EventType.Repaint)
 				continue;
@@ -274,73 +282,6 @@ internal class Players : ToggleFeature
 			HostileType.RogueUsec => RogueUsecColors,
 			_ => ScavColors,
 		};
-	}
-
-	private void SetShaders(Player player, Shader? shader, Color color, Color borderColor, Dictionary<Renderer, Shader?> cache)
-	{
-		var playerBody = player.PlayerBody;
-		if (playerBody == null)
-			return;
-
-		var skins = playerBody.BodySkins;
-		if (skins == null)
-			return;
-
-		foreach (var skin in skins.Values)
-		{
-			if (skin == null)
-				continue;
-
-			foreach (var renderer in skin.GetRenderers())
-			{
-				if (renderer == null)
-					continue;
-
-				var material = renderer.material;
-				if (material == null)
-					continue;
-
-				if (material.shader != null && material.shader == shader)
-					continue;
-
-				// disable custom occlusion/culling system, making the chams flickering or not rendering at all
-				renderer.allowOcclusionWhenDynamic = false;
-				renderer.forceRenderingOff = false;
-				renderer.enabled = true;
-
-				cache[renderer] = material.shader;
-				material.shader = shader;
-
-				material.SetColor("_FirstOutlineColor", borderColor);
-				material.SetFloat("_FirstOutlineWidth", 0.02f);
-				material.SetColor("_SecondOutlineColor", color);
-				material.SetFloat("_SecondOutlineWidth", 0.0025f);
-				material.SetFloat("_ZTest", (float)(XRayVision ? CompareFunction.Always : CompareFunction.Less));
-			}
-		}
-	}
-
-	private static void ResetShaders(Dictionary<Renderer, Shader?> cache)
-	{
-		var hits = 0;
-		foreach (var renderer in cache.Keys)
-		{
-			if (renderer == null)
-				continue;
-
-			if (renderer.material == null)
-				continue;
-
-			var shader = cache[renderer];
-			if (renderer.material.shader == shader)
-				continue;
-
-			renderer.material.shader = shader;
-			hits++;
-		}
-
-		if (hits == 0 && cache.Count > 0)
-			cache.Clear();
 	}
 
 	public static Vector2 ScopePointToScreenPoint(Camera camera, Vector3 worldPoint, bool clamp = false)

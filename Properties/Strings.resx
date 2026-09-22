@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -636,6 +636,9 @@ Colors are stored as an array of 'RGBA' floats</value>
   <data name="PropertyBearColors" xml:space="preserve">
     <value>Bear colors</value>
   </data>
+  <data name="PropertyBodyTint" xml:space="preserve">
+    <value>Body fill opacity (0-1)</value>
+  </data>
   <data name="PropertyBorderColor" xml:space="preserve">
     <value>Border color</value>
   </data>
@@ -740,6 +743,15 @@ Colors are stored as an array of 'RGBA' floats</value>
   </data>
   <data name="PropertyNotShootableColors" xml:space="preserve">
     <value>Not shootable colors</value>
+  </data>
+  <data name="PropertyOccludedColor" xml:space="preserve">
+    <value>Occluded color</value>
+  </data>
+  <data name="PropertyOccludedOpacity" xml:space="preserve">
+    <value>Occluded opacity (0-1)</value>
+  </data>
+  <data name="PropertyOutlineScale" xml:space="preserve">
+    <value>Outline scale</value>
   </data>
   <data name="PropertyRadarBackground" xml:space="preserve">
     <value>Radar background</value>
@@ -990,5 +1002,41 @@ Colors are stored as an array of 'RGBA' floats</value>
   </data>
   <data name="PropertyShowJoints" xml:space="preserve">
     <value>Show joint dots</value>
+  </data>
+  <data name="FeatureHighlightsName" xml:space="preserve">
+    <value>Outlines and fill</value>
+  </data>
+  <data name="FeatureHighlightsDescription" xml:space="preserve">
+    <value>Character settings are on the Players page. Nearby loot and containers use separate colors. Screen radius 0 means the entire view.</value>
+  </data>
+  <data name="PropertyHighlightItems" xml:space="preserve">
+    <value>Outline loose loot</value>
+  </data>
+  <data name="PropertyHighlightContainers" xml:space="preserve">
+    <value>Outline loot containers</value>
+  </data>
+  <data name="PropertyItemOutlineColor" xml:space="preserve">
+    <value>Loot color</value>
+  </data>
+  <data name="PropertyContainerOutlineColor" xml:space="preserve">
+    <value>Container color</value>
+  </data>
+  <data name="PropertyQuestOutlineColor" xml:space="preserve">
+    <value>Quest item color</value>
+  </data>
+  <data name="PropertyItemHighlightDistance" xml:space="preserve">
+    <value>Loot distance (m)</value>
+  </data>
+  <data name="PropertyItemFillOpacity" xml:space="preserve">
+    <value>Loot fill opacity (0-1)</value>
+  </data>
+  <data name="PropertyItemOutlineWidth" xml:space="preserve">
+    <value>Loot outline width (1-5 px)</value>
+  </data>
+  <data name="PropertyHighlightScreenRadius" xml:space="preserve">
+    <value>Screen radius (px, 0=full)</value>
+  </data>
+  <data name="PropertyMaximumItemHighlights" xml:space="preserve">
+    <value>Maximum outlined items</value>
   </data>
 </root>

@@ -3,6 +3,10 @@
 ###############################################################################
 * text=auto
 
+# Keep the shader source checksums stable on Windows clones (core.autocrlf).
+ShaderProject/Assets/Trainer/*.shader text eol=lf
+Files/trainer-highlights binary
+
 ###############################################################################
 # Set default behavior for command prompt diff.
 #

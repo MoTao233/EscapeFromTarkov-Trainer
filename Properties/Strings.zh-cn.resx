@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -637,6 +637,9 @@
   <data name="PropertyBearColors" xml:space="preserve">
     <value>Bear 阵营颜色</value>
   </data>
+  <data name="PropertyBodyTint" xml:space="preserve">
+    <value>人物填色不透明度（0–1）</value>
+  </data>
   <data name="PropertyBorderColor" xml:space="preserve">
     <value>边框颜色</value>
   </data>
@@ -741,6 +744,15 @@
   </data>
   <data name="PropertyNotShootableColors" xml:space="preserve">
     <value>不可射击时颜色</value>
+  </data>
+  <data name="PropertyOccludedColor" xml:space="preserve">
+    <value>遮挡剪影颜色</value>
+  </data>
+  <data name="PropertyOccludedOpacity" xml:space="preserve">
+    <value>遮挡不透明度（0–1）</value>
+  </data>
+  <data name="PropertyOutlineScale" xml:space="preserve">
+    <value>描边粗细倍率</value>
   </data>
   <data name="PropertyRadarBackground" xml:space="preserve">
     <value>雷达边框颜色</value>
@@ -991,5 +1003,41 @@
   </data>
   <data name="PropertyShowJoints" xml:space="preserve">
     <value>显示关节点</value>
+  </data>
+  <data name="FeatureHighlightsName" xml:space="preserve">
+    <value>描边与填色</value>
+  </data>
+  <data name="FeatureHighlightsDescription" xml:space="preserve">
+    <value>人物颜色及填色在玩家 ESP 页调整；此页控制物品、容器和共用开关。屏幕半径为 0 时覆盖整个视野。</value>
+  </data>
+  <data name="PropertyHighlightItems" xml:space="preserve">
+    <value>散落物品描边</value>
+  </data>
+  <data name="PropertyHighlightContainers" xml:space="preserve">
+    <value>可搜索容器描边</value>
+  </data>
+  <data name="PropertyItemOutlineColor" xml:space="preserve">
+    <value>物品颜色</value>
+  </data>
+  <data name="PropertyContainerOutlineColor" xml:space="preserve">
+    <value>容器颜色</value>
+  </data>
+  <data name="PropertyQuestOutlineColor" xml:space="preserve">
+    <value>任务物品颜色</value>
+  </data>
+  <data name="PropertyItemHighlightDistance" xml:space="preserve">
+    <value>物品描边距离（米）</value>
+  </data>
+  <data name="PropertyItemFillOpacity" xml:space="preserve">
+    <value>物品填色不透明度（0–1）</value>
+  </data>
+  <data name="PropertyItemOutlineWidth" xml:space="preserve">
+    <value>物品边线宽度（1–5 像素）</value>
+  </data>
+  <data name="PropertyHighlightScreenRadius" xml:space="preserve">
+    <value>屏幕中心半径（像素，0 为全屏）</value>
+  </data>
+  <data name="PropertyMaximumItemHighlights" xml:space="preserve">
+    <value>最多同时描边物品数</value>
   </data>
 </root>

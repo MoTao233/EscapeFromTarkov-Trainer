@@ -26,7 +26,7 @@ internal class Commands : FeatureRenderer
 	[ConfigurationProperty]
 	public override float Y { get; set; } = DefaultY;
 
-	public override KeyCode Key { get; set; } = KeyCode.RightAlt;
+	public override KeyCode Key { get; set; } = KeyCode.Insert;
 
 	private bool Registered { get; set; } = false;
 	private Dictionary<string, string> PropertyDisplays { get; } = [];
