@@ -164,6 +164,7 @@ internal sealed class Highlights : ToggleFeature
 		foreach (var candidate in world.RegisteredPlayers)
 		{
 			if (candidate is not Player player || player == world.MainPlayer || !player.IsAlive() || player.PlayerBody == null) continue;
+			if (!_players.TryGetDisplayColors(player, world.MainPlayer, out var colors)) continue;
 			if (!_playerCache.TryGetValue(player, out var entry))
 			{
 				entry = new PlayerEntry();
@@ -177,7 +178,6 @@ internal sealed class Highlights : ToggleFeature
 				entry.Target.Refresh(_renderers);
 				entry.NextRefresh = Time.unscaledTime + 2;
 			}
-			var colors = _players.GetPlayerColors(player);
 			var target = entry.Target;
 			target.Fill = Alpha(colors.Color, _players.BodyTint);
 			target.Edge = colors.BorderColor;

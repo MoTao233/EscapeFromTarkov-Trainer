@@ -115,6 +115,8 @@ internal abstract class BaseMapToggleFeature : ToggleFeature
 		{
 			if (!enemy.IsValid())
 				continue;
+			if (!feature.TryGetDisplayColors(enemy, GameState.Current?.LocalPlayer, out var playerColor))
+				continue;
 
 			var position = enemy.Transform.position;
 
@@ -141,7 +143,6 @@ internal abstract class BaseMapToggleFeature : ToggleFeature
 
 				default:
 					{
-						var playerColor = feature.GetPlayerColors(hostileType);
 						DrawEnemy(camera, enemy, playerColor.Color);
 						break;
 					}

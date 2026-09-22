@@ -36,6 +36,7 @@ internal sealed class PlayerEsp
 	private int _frame = -1;
 	private Camera? _camera;
 	private Player? _local;
+	private bool _drawingTeammate;
 
 	public void BeginFrame(EspProjection view, Player local)
 	{
@@ -101,6 +102,7 @@ internal sealed class PlayerEsp
 
 	public void Draw(Player target, Players settings, PlayerColor colors)
 	{
+		_drawingTeammate = ReferenceEquals(colors, settings.TeammateColors);
 		if (!settings.ShowBoxes && !settings.ShowSkeletons && !settings.ShowInfos) return;
 		float distance = Vector3.Distance(_view.Camera.transform.position, target.Transform.position);
 		if (settings.MaximumDistance > 0 && distance > settings.MaximumDistance) return;
@@ -110,8 +112,8 @@ internal sealed class PlayerEsp
 		bool visible = !needsVisibility || AnyVisible(target, bones);
 		if (settings.VisibleOnly && !visible) return;
 
-		var skeletonColor = settings.ModernEsp && settings.UnifiedEspColor ? settings.EspColor : colors.Color;
-		var borderColor = settings.ModernEsp && settings.UnifiedEspColor ? settings.EspColor : colors.BorderColor;
+		var skeletonColor = colors.Color;
+		var borderColor = colors.BorderColor;
 		borderColor = StateColor(settings, visible, borderColor, true);
 		float boxWidth = Width(settings.BoxThickness);
 		if (settings.ShowBoxes)
@@ -202,13 +204,13 @@ internal sealed class PlayerEsp
 				EspDrawing.Fill(fill, Color.Lerp(new Color(1, 0.3f, 0.25f), new Color(0.6f, 0.9f, 0.5f), fraction));
 			}
 		}
-		if (settings.ShowWeapon) _drawing.Label(_view, new Vector2(box.center.x, box.yMin - 4), weaponText, Color.white, settings.EspTextSize, true);
-		if (settings.ShowDistance) _drawing.Label(_view, new Vector2(box.center.x, box.yMax + 4), distanceText, Color.white, settings.EspTextSize, false);
+		if (settings.ShowWeapon) _drawing.Label(_view, new Vector2(box.center.x, box.yMin - 4), weaponText, colors.InfoColor, settings.EspTextSize, true);
+		if (settings.ShowDistance) _drawing.Label(_view, new Vector2(box.center.x, box.yMax + 4), distanceText, colors.InfoColor, settings.EspTextSize, false);
 	}
 
-	private static Color StateColor(Players settings, bool visible, Color fallback, bool border)
+	private Color StateColor(Players settings, bool visible, Color fallback, bool border)
 	{
-		if (!settings.ShowShootable) return fallback;
+		if (_drawingTeammate || !settings.ShowShootable) return fallback;
 		var colors = visible ? settings.ShootableColors : settings.ShowNotShootable ? settings.NotShootableColors : null;
 		return colors == null ? fallback : border ? colors.BorderColor : colors.Color;
 	}

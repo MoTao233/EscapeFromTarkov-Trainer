@@ -15,6 +15,16 @@ namespace EFT.Trainer.Configuration;
 internal static class ConfigurationManager
 {
 	public static JsonConverter[] Converters => [new TrackedItemConverter(), new ColorConverter(), new KeyCodeConverter()];
+	public static string LastStatus { get; private set; } = string.Empty;
+	public static bool LastOperationSucceeded { get; private set; }
+
+	private static bool Report(string message, bool success)
+	{
+		LastStatus = message;
+		LastOperationSucceeded = success;
+		AddConsoleLog(success ? message : message.Red());
+		return success;
+	}
 
 	private static void AddConsoleLog(string log)
 	{
@@ -22,19 +32,20 @@ internal static class ConfigurationManager
 			ConsoleScreen.Log(log);
 	}
 
-	public static void Load(string filename, Feature[] features, bool warnIfNotExists = true)
+	public static bool Load(string filename, Feature[] features, bool warnIfNotExists = true)
 	{
 		try
 		{
 			if (!File.Exists(filename))
 			{
 				if (warnIfNotExists)
-					AddConsoleLog(string.Format(Strings.ErrorFileNotFoundFormat, filename));
+					return Report(string.Format(Strings.ErrorFileNotFoundFormat, filename), false);
 
-				return;
+				return false;
 			}
 
 			var lines = File.ReadAllLines(filename);
+			int loaded = 0, failed = 0;
 
 			foreach (var feature in features)
 			{
@@ -46,25 +57,32 @@ internal static class ConfigurationManager
 					var key = $"{featureType.FullName}.{op.Property.Name}=";
 					try
 					{
-						var line = lines.FirstOrDefault(l => l.StartsWith(key));
+						var line = lines.FirstOrDefault(l => l.StartsWith(key, StringComparison.Ordinal));
 						if (line == null)
 							continue;
 
 						var value = JsonConvert.DeserializeObject(line.Substring(key.Length), op.Property.PropertyType, Converters);
+						if (value == null && op.Property.GetValue(feature) != null)
+							throw new JsonSerializationException("A configured value cannot be null.");
 						op.Property.SetValue(feature, value);
+						loaded++;
 					}
-					catch (JsonException)
+					catch (Exception)
 					{
+						// A broken converter or property setter must not block the remaining settings.
+						failed++;
 						AddConsoleLog(string.Format(Strings.ErrorCorruptedPropertyFormat, key, filename).Red());
 					}
 				}
 			}
 
-			AddConsoleLog(string.Format(Strings.CommandLoadSuccessFormat, filename));
+			if (failed > 0 || loaded == 0)
+				return Report(string.Format(Strings.ResourceManager.GetString("ConfigurationLoadPartialFormat", Strings.Culture)!, loaded, failed, filename), false);
+			return Report(string.Format(Strings.CommandLoadSuccessFormat, filename), true);
 		}
 		catch (Exception ioe)
 		{
-			AddConsoleLog(string.Format(Strings.ErrorCannotLoadFormat, filename, ioe.Message).Red());
+			return Report(string.Format(Strings.ErrorCannotLoadFormat, filename, ioe.Message), false);
 		}
 	}
 
@@ -101,7 +119,7 @@ internal static class ConfigurationManager
 		}
 	}
 
-	public static void Save(string filename, Feature[] features)
+	public static bool Save(string filename, Feature[] features)
 	{
 		try
 		{
@@ -130,12 +148,34 @@ internal static class ConfigurationManager
 					content.AppendLine();
 			}
 
-			File.WriteAllText(filename, content.ToString());
-			AddConsoleLog(string.Format(Strings.CommandSaveSuccessFormat, filename));
+			WriteSafely(filename, content.ToString());
+			return Report(string.Format(Strings.CommandSaveSuccessFormat, filename), true);
 		}
 		catch (Exception ioe)
 		{
-			AddConsoleLog(string.Format(Strings.ErrorCannotSaveFormat, filename, ioe.Message).Red());
+			return Report(string.Format(Strings.ErrorCannotSaveFormat, filename, ioe.Message), false);
+		}
+	}
+
+	private static void WriteSafely(string filename, string content)
+	{
+		var fullPath = Path.GetFullPath(filename);
+		Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+		var temporary = fullPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+		try
+		{
+			// Replace only after serialization and writing succeed; retain the previous save.
+			File.WriteAllText(temporary, content, new UTF8Encoding(false));
+			if (File.Exists(fullPath))
+				File.Replace(temporary, fullPath, fullPath + ".bak");
+			else
+				File.Move(temporary, fullPath);
+		}
+		finally
+		{
+			try { if (File.Exists(temporary)) File.Delete(temporary); }
+			catch (IOException) { }
+			catch (UnauthorizedAccessException) { }
 		}
 	}
 
@@ -158,7 +198,7 @@ internal static class ConfigurationManager
 				.First(p => p.Property.Name == propertyName);
 
 			var content = JsonConvert.SerializeObject(tlProperty.Property.GetValue(feature), Formatting.Indented, Converters);
-			File.WriteAllText(filename, content);
+			WriteSafely(filename, content);
 
 			AddConsoleLog(string.Format(Strings.CommandSaveSuccessFormat, filename));
 		}

@@ -979,11 +979,14 @@ Colors are stored as an array of 'RGBA' floats</value>
   <data name="PropertyModernEsp" xml:space="preserve">
     <value>Modern ESP style</value>
   </data>
-  <data name="PropertyUnifiedEspColor" xml:space="preserve">
-    <value>Unified ESP color</value>
+  <data name="PropertyShowTeammates" xml:space="preserve">
+    <value>Show teammates</value>
   </data>
-  <data name="PropertyEspColor" xml:space="preserve">
-    <value>ESP color</value>
+  <data name="PropertyTeammateColors" xml:space="preserve">
+    <value>Teammate colors</value>
+  </data>
+  <data name="ConfigurationLoadPartialFormat" xml:space="preserve">
+    <value>Loaded {0} settings; skipped {1} invalid settings. Check configuration: {2}</value>
   </data>
   <data name="PropertyBoxFillOpacity" xml:space="preserve">
     <value>Box opacity (0-1)</value>

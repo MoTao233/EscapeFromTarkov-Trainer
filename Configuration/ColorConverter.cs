@@ -21,6 +21,8 @@ public class ColorConverter : JsonConverter
 	public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
 	{
 		var array = serializer.Deserialize<float[]>(reader);
+		if (array != null && (array.Length != 4 || array.Any(v => float.IsNaN(v) || float.IsInfinity(v))))
+			throw new JsonSerializationException("A color must contain four finite RGBA values.");
 
 		if (Nullable.GetUnderlyingType(objectType) == typeof(Color))
 		{
@@ -34,7 +36,7 @@ public class ColorConverter : JsonConverter
 
 	public override bool CanConvert(Type objectType)
 	{
-		return objectType == typeof(Color);
+		return objectType == typeof(Color) || Nullable.GetUnderlyingType(objectType) == typeof(Color);
 	}
 
 	public static Color? Parse(string value)

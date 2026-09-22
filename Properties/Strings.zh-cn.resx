@@ -980,11 +980,14 @@
   <data name="PropertyModernEsp" xml:space="preserve">
     <value>现代 ESP 样式</value>
   </data>
-  <data name="PropertyUnifiedEspColor" xml:space="preserve">
-    <value>统一 ESP 配色</value>
+  <data name="PropertyShowTeammates" xml:space="preserve">
+    <value>显示队友</value>
   </data>
-  <data name="PropertyEspColor" xml:space="preserve">
-    <value>ESP 颜色</value>
+  <data name="PropertyTeammateColors" xml:space="preserve">
+    <value>队友颜色</value>
+  </data>
+  <data name="ConfigurationLoadPartialFormat" xml:space="preserve">
+    <value>已加载 {0} 项设置，跳过 {1} 项无效设置。请检查配置：{2}</value>
   </data>
   <data name="PropertyBoxFillOpacity" xml:space="preserve">
     <value>框内不透明度（0–1）</value>

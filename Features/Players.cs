@@ -10,23 +10,6 @@ using UnityEngine;
 
 namespace EFT.Trainer.Features;
 
-public class PlayerColor(Color color, Color borderColor, Color infoColor) : IFeature
-{
-	[ConfigurationProperty(Order = 1)]
-	public Color Color { get; set; } = color;
-
-	[ConfigurationProperty(Order = 2)]
-	public Color BorderColor { get; set; } = borderColor;
-
-	[ConfigurationProperty(Order = 3)]
-	public Color OccludedColor { get; set; } = color;
-
-	[ConfigurationProperty(Order = 4)]
-	public Color InfoColor { get; set; } = infoColor;
-
-	public string Name => nameof(PlayerColor);
-}
-
 public class ShootableColor(Color color, Color borderColor) : IFeature
 {
 	[ConfigurationProperty(Order = 1)]
@@ -45,31 +28,31 @@ internal class Players : ToggleFeature
 	public override string Description => Strings.FeaturePlayersDescription;
 
 	[ConfigurationProperty(Order = 10)]
-	public PlayerColor BearColors { get; set; } = new(Color.blue, Color.red, Color.red);
+	public PlayerColor BearColors { get; set; } = new(Color.blue, Color.blue, Color.blue);
 
 	[ConfigurationProperty(Order = 10)]
-	public PlayerColor UsecColors { get; set; } = new(Color.green, Color.red, Color.red);
+	public PlayerColor UsecColors { get; set; } = new(Color.green, Color.green, Color.green);
 
 	[ConfigurationProperty(Order = 10)]
-	public PlayerColor ScavColors { get; set; } = new(Color.yellow, Color.red, Color.red);
+	public PlayerColor ScavColors { get; set; } = new(Color.yellow, Color.yellow, Color.yellow);
 
 	[ConfigurationProperty(Order = 10)]
 	public PlayerColor BossColors { get; set; } = new(Color.red, Color.red, Color.red);
 
 	[ConfigurationProperty(Order = 10)]
-	public PlayerColor CultistColors { get; set; } = new(Color.yellow, Color.red, Color.red);
+	public PlayerColor CultistColors { get; set; } = new(Color.magenta, Color.magenta, Color.magenta);
 
 	[ConfigurationProperty(Order = 10)]
-	public PlayerColor ScavRaiderColors { get; set; } = new(Color.yellow, Color.red, Color.red);
+	public PlayerColor ScavRaiderColors { get; set; } = new(new Color(1, 0.5f, 0), new Color(1, 0.5f, 0), new Color(1, 0.5f, 0));
 
 	[ConfigurationProperty(Order = 10)]
-	public PlayerColor ScavAssaultColors { get; set; } = new(Color.yellow, Color.red, Color.red);
+	public PlayerColor ScavAssaultColors { get; set; } = new(Color.yellow, Color.yellow, Color.yellow);
 
 	[ConfigurationProperty(Order = 10)]
-	public PlayerColor MarksmanColors { get; set; } = new(Color.yellow, Color.red, Color.red);
+	public PlayerColor MarksmanColors { get; set; } = new(Color.yellow, Color.yellow, Color.yellow);
 
 	[ConfigurationProperty(Order = 10)]
-	public PlayerColor RogueUsecColors { get; set; } = new(Color.gray, Color.red, Color.red);
+	public PlayerColor RogueUsecColors { get; set; } = new(Color.gray, Color.gray, Color.gray);
 
 	[ConfigurationProperty(Order = 20)]
 	public bool ShowBoxes { get; set; } = true;
@@ -141,10 +124,10 @@ internal class Players : ToggleFeature
 	public bool ModernEsp { get; set; } = true;
 
 	[ConfigurationProperty(Order = 13)]
-	public bool UnifiedEspColor { get; set; } = true;
+	public bool ShowTeammates { get; set; } = false;
 
 	[ConfigurationProperty(Order = 14)]
-	public Color EspColor { get; set; } = new(0.396f, 0.902f, 0.863f, 1);
+	public PlayerColor TeammateColors { get; set; } = new(Color.cyan, Color.cyan, Color.cyan);
 
 	private float _boxFillOpacity = 0.08f;
 	[ConfigurationProperty(Order = 22)]
@@ -217,7 +200,8 @@ internal class Players : ToggleFeature
 			if (!ennemy.IsValid())
 				continue;
 
-			var playerColors = GetPlayerColors(ennemy);
+			if (!TryGetDisplayColors(ennemy, player, out var playerColors))
+				continue;
 
 			if (Event.current.type != EventType.Repaint)
 				continue;
@@ -261,10 +245,11 @@ internal class Players : ToggleFeature
 		return currentOptic != null && GetScopeParameters(camera, currentOptic);
 	}
 
-	public PlayerColor GetPlayerColors(Player player)
+	public bool TryGetDisplayColors(Player player, Player? local, out PlayerColor colors)
 	{
-		var hostileType = player.GetHostileType();
-		return GetPlayerColors(hostileType);
+		var teammate = PlayerTeam.IsTeammate(player, local);
+		colors = teammate ? TeammateColors : GetPlayerColors(player.GetHostileType());
+		return !teammate || ShowTeammates;
 	}
 
 	public PlayerColor GetPlayerColors(HostileType hostileType)

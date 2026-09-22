@@ -176,6 +176,13 @@ internal abstract class FeatureRenderer : ToggleFeature
 		if (GUILayout.Button(Strings.CommandSaveDescription))
 			SaveSettings();
 
+		GUILayout.Label(Context.ConfigFile, DescriptionStyle);
+		if (!string.IsNullOrEmpty(ConfigurationManager.LastStatus))
+			GUILayout.Label(ConfigurationManager.LastStatus, new GUIStyle(DescriptionStyle)
+			{
+				normal = { textColor = ConfigurationManager.LastOperationSucceeded ? Color.green : new Color(1, 0.6f, 0.3f) }
+			});
+
 		GUILayout.EndVertical();
 	}
 
@@ -191,6 +198,8 @@ internal abstract class FeatureRenderer : ToggleFeature
 
 		ConfigurationManager.Load(Context.ConfigFile, Context.Features.Value, warnIfNotExists);
 		_controlValues.Clear();
+		_colorSelectionContext = null;
+		_keyCodeSelectionContext = null;
 
 		if (!Enabled)
 			return;
@@ -255,13 +264,13 @@ internal abstract class FeatureRenderer : ToggleFeature
 
 	protected abstract string GetPropertyDisplay(string propertyName);
 
-	private object RenderFeaturePropertyAsUIComponent(IFeature feature, OrderedProperty orderedProperty, object currentValue, GUILayoutOption width)
+	private object RenderFeaturePropertyAsUIComponent(IFeature feature, OrderedProperty orderedProperty, object currentValue, GUILayoutOption width, string? parentName = null)
 	{
 		var property = orderedProperty.Property;
 		var propertyType = property.PropertyType;
 
 		var newValue = currentValue;
-		var controlName = $"{feature.Name}.{property.Name}-{propertyType.Name}";
+		var controlName = $"{parentName ?? feature.Name}.{property.Name}-{propertyType.Name}";
 		GUI.SetNextControlName(controlName);
 
 		switch (propertyType.Name)
@@ -305,7 +314,7 @@ internal abstract class FeatureRenderer : ToggleFeature
 						{
 							var innerProperty = innerOrderedProperty.Property;
 							var innerPropertyValue = innerProperty.GetValue(subFeature);
-							RenderFeaturePropertyAsUIComponent(subFeature, innerOrderedProperty, innerPropertyValue, width);
+							RenderFeaturePropertyAsUIComponent(subFeature, innerOrderedProperty, innerPropertyValue, width, controlName);
 						}
 
 						break;
