@@ -13,7 +13,7 @@ public class ColorPicker : Picker<Color>
 	private float _s = 0f;
 	private float _v = 0f;
 
-	private Rect _windowRect = new(20, 20, 165, 100);
+	private Rect _windowRect = new(20, 20, 170, 100);
 
 	private readonly GUIStyle _previewStyle;
 	private readonly GUIStyle _svStyle;
@@ -52,7 +52,7 @@ public class ColorPicker : Picker<Color>
 
 	public override void DrawWindow(int id, string title)
 	{
-		_windowRect = GUI.Window(id, _windowRect, DrawColorPickerWindow, title);
+		_windowRect = GUI.Window(id, _windowRect, DrawColorPickerWindow, title, Theme.PopupWindow);
 	}
 
 	private void DrawColorPickerWindow(int id)

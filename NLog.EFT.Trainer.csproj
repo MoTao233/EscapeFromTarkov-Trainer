@@ -165,6 +165,7 @@
     <Compile Include="Features\Aimbot.cs" />
     <Compile Include="Features\Ammunition.cs" />
     <Compile Include="Features\BaseMapToggleFeature.cs" />
+    <Compile Include="Features\FeatureCatalog.cs" />
     <Compile Include="Features\FeatureRenderer.cs" />
     <Compile Include="Features\FovChanger.cs" />
     <Compile Include="Features\Durability.cs" />
@@ -248,6 +249,7 @@
     <Compile Include="UI\ColorUtil.cs" />
     <Compile Include="UI\Render.cs" />
     <Compile Include="UI\EspDrawing.cs" />
+    <Compile Include="UI\Theme.cs" />
     <Compile Include="EFTTarget.cs" />
     <Compile Include="KnownTemplateIds.cs" />
     <Compile Include="Loader.cs" />

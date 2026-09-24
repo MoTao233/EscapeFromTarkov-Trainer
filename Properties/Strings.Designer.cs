@@ -2464,7 +2464,25 @@ namespace EFT.Trainer.Properties {
                 return ResourceManager.GetString("TextOn", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to hold.
+        /// </summary>
+        internal static string TextHold {
+            get {
+                return ResourceManager.GetString("TextHold", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to execute.
+        /// </summary>
+        internal static string TextTrigger {
+            get {
+                return ResourceManager.GetString("TextTrigger", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to ------.
         /// </summary>

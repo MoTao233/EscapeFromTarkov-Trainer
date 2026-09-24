@@ -1055,4 +1055,46 @@
   <data name="PropertyDoorFillOpacity" xml:space="preserve">
     <value>门填色不透明度（0 为只描边）</value>
   </data>
+  <data name="CategoryAim" xml:space="preserve">
+    <value>自动瞄准</value>
+  </data>
+  <data name="CategoryEsp" xml:space="preserve">
+    <value>透视 ESP</value>
+  </data>
+  <data name="CategoryVision" xml:space="preserve">
+    <value>视觉</value>
+  </data>
+  <data name="CategoryCombat" xml:space="preserve">
+    <value>战斗</value>
+  </data>
+  <data name="CategoryCharacter" xml:space="preserve">
+    <value>角色</value>
+  </data>
+  <data name="CategoryWorld" xml:space="preserve">
+    <value>世界</value>
+  </data>
+  <data name="CategorySystem" xml:space="preserve">
+    <value>系统</value>
+  </data>
+  <data name="CategoryMisc" xml:space="preserve">
+    <value>其他</value>
+  </data>
+  <data name="CategoryGroupRadar" xml:space="preserve">
+    <value>雷达与地图</value>
+  </data>
+  <data name="CategoryGroupInteraction" xml:space="preserve">
+    <value>物品与交互</value>
+  </data>
+  <data name="TextLegacy" xml:space="preserve">
+    <value>旧版</value>
+  </data>
+  <data name="TextTrigger" xml:space="preserve">
+    <value>执行</value>
+  </data>
+  <data name="TextHold" xml:space="preserve">
+    <value>按住</value>
+  </data>
+  <data name="TextExecute" xml:space="preserve">
+    <value>执行</value>
+  </data>
 </root>

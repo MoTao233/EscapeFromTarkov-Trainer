@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using EFT.InputSystem;
 using EFT.Trainer.Configuration;
+using EFT.Trainer.Features;
 using EFT.Trainer.Properties;
 using EFT.Trainer.UI;
 using UnityEngine;
@@ -19,10 +20,6 @@ internal abstract class FeatureRenderer : ToggleFeature
 
 	protected const float DefaultX = 40f;
 	protected const float DefaultY = 20f;
-
-	private static GUIStyle LabelStyle => new() { wordWrap = false, normal = { textColor = Color.white }, margin = new RectOffset(8, 0, 8, 0), fixedWidth = 150f, stretchWidth = false };
-	private static GUIStyle DescriptionStyle => new() { wordWrap = true, normal = { textColor = Color.white }, margin = new RectOffset(8, 0, 8, 0), stretchWidth = true };
-	private static GUIStyle BoxStyle => new(GUI.skin.box) { normal = { background = Texture2D.whiteTexture, textColor = Color.white } };
 
 	protected void SetupWindowCoordinates()
 	{
@@ -55,8 +52,8 @@ internal abstract class FeatureRenderer : ToggleFeature
 
 			// Convert out of the scroll view before placing a separate GUI window.
 			var position = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
-			Picker.SetWindowPosition(Mathf.Clamp(parentX + LabelStyle.fixedWidth * 3 + LabelStyle.margin.left * 6, 0, Mathf.Max(0, Screen.width - 190)),
-				Mathf.Clamp(position.y - 32f, 0, Mathf.Max(0, Screen.height - 220)));
+			Picker.SetWindowPosition(Mathf.Clamp(parentX + Theme.WindowWidth + 8f, 0, Mathf.Max(0, Screen.width - 220)),
+				Mathf.Clamp(position.y - 32f, 0, Mathf.Max(0, Screen.height - 260)));
 		}
 
 		public IFeature Feature { get; }
@@ -82,21 +79,29 @@ internal abstract class FeatureRenderer : ToggleFeature
 	{
 		SetupInputNode();
 
-		_clientWindowRect = new Rect(X, Y, 490, _clientWindowRect.height);
-		_clientWindowRect = GUILayout.Window(0, _clientWindowRect, RenderFeatureWindow, Strings.FeatureCommandsTitle, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
-		X = _clientWindowRect.x;
-		Y = _clientWindowRect.y;
+		var previousSkin = GUI.skin;
+		try
+		{
+			GUI.skin = Theme.Skin;
 
-		HandleSelectionContext(_colorSelectionContext);
+			_clientWindowRect = new Rect(X, Y, Theme.WindowWidth, _clientWindowRect.height);
+			_clientWindowRect = GUILayout.Window(0, _clientWindowRect, RenderFeatureWindow, Strings.FeatureCommandsTitle, GUILayout.ExpandHeight(true));
+			X = _clientWindowRect.x;
+			Y = _clientWindowRect.y;
 
-		if (HandleSelectionContext(_keyCodeSelectionContext))
-			_keyCodeSelectionContext = null;
+			HandleSelectionContext(_colorSelectionContext);
+			HandleSelectionContext(_keyCodeSelectionContext);
+		}
+		finally
+		{
+			GUI.skin = previousSkin;
+		}
 	}
 
-	private bool HandleSelectionContext<T>(SelectionContext<T>? context)
+	private void HandleSelectionContext<T>(SelectionContext<T>? context)
 	{
 		if (context == null)
-			return false;
+			return;
 
 		var property = context.OrderedProperty.Property;
 		var picker = context.Picker;
@@ -104,83 +109,227 @@ internal abstract class FeatureRenderer : ToggleFeature
 		picker.DrawWindow(context.Id, GetPropertyDisplay(property.Name));
 		property.SetValue(context.Feature, picker.Value);
 
-		return picker.IsSelected;
+		if (!picker.IsSelected)
+			return;
+
+		if (ReferenceEquals(context, _colorSelectionContext))
+			_colorSelectionContext = null;
+
+		if (ReferenceEquals(context, _keyCodeSelectionContext))
+			_keyCodeSelectionContext = null;
 	}
 
-	private int _selectedTabIndex = 0;
+	private const int SummaryTabIndex = -1;
+	private static string SummaryTitle => Strings.FeatureRendererSummary.Trim('[', ']', ' ');
+
+	private int _selectedTabIndex = SummaryTabIndex;
+	private FeatureCategory _category = FeatureCatalog.Categories[0];
+	private Vector2 _sidebarScroll;
+	private Vector2 _featureScroll;
 	private Vector2 _settingsScroll;
+
 	private void RenderFeatureWindow(int id)
 	{
-		var fixedTabs = new[] { Strings.FeatureRendererSummary };
-
-		var tabs = fixedTabs
-			.Concat
-			(
-				Context
-					.Features
-					.Value
-					.Select(RenderFeatureText)
-			)
-			.ToArray();
-
-		var style = new GUIStyle { wordWrap = false, normal = { textColor = Color.white }, alignment = TextAnchor.UpperLeft, fixedHeight = 1, stretchHeight = true };
-
 		GUILayout.BeginHorizontal();
-		var lastIndex = _selectedTabIndex;
-		_selectedTabIndex = GUILayout.SelectionGrid(_selectedTabIndex, tabs, 1, GUILayout.Width(LabelStyle.fixedWidth));
 
-		if (lastIndex != _selectedTabIndex)
+		var panel = Theme.PanelHeight;
+
+		// Categories
+		GUILayout.BeginVertical(Theme.Sidebar, GUILayout.Width(Theme.SidebarWidth), GUILayout.Height(panel));
+		_sidebarScroll = GUILayout.BeginScrollView(_sidebarScroll, false, false, GUI.skin.horizontalScrollbar, GUI.skin.verticalScrollbar);
+
+		if (Theme.SidebarItem(SummaryTitle, _selectedTabIndex == SummaryTabIndex, null))
+			SelectSummary();
+
+		Theme.SidebarDivider();
+
+		foreach (var category in FeatureCatalog.Categories)
 		{
-			_settingsScroll = Vector2.zero;
-			_colorSelectionContext = null;
-			_keyCodeSelectionContext = null;
+			if (FeatureCatalog.GetAreas(category).Length == 0)
+				continue;
+
+			if (Theme.SidebarItem(GetCategoryDisplay(category), _selectedTabIndex != SummaryTabIndex && _category == category, null))
+				SelectCategory(category);
 		}
-
-		GUILayout.BeginVertical(style);
-		GUILayout.Space(4);
-
-		switch (_selectedTabIndex)
-		{
-			case 0:
-				RenderSummary();
-				break;
-			default:
-				var feature = Context.Features.Value[_selectedTabIndex - fixedTabs.Length];
-				RenderFeature(feature);
-
-				break;
-
-		}
+		GUILayout.EndScrollView();
 		GUILayout.EndVertical();
+
+		GUILayout.Space(Theme.Gap);
+
+		// Features of the selected category
+		GUILayout.BeginVertical(Theme.Sidebar, GUILayout.Width(Theme.FeatureListWidth), GUILayout.Height(panel));
+		_featureScroll = GUILayout.BeginScrollView(_featureScroll, false, false, GUI.skin.horizontalScrollbar, GUI.skin.verticalScrollbar);
+		RenderFeatureList();
+		GUILayout.EndScrollView();
+		GUILayout.EndVertical();
+
+		GUILayout.Space(Theme.Gap);
+
+		// Settings
+		GUILayout.BeginVertical(GUILayout.Width(Theme.ContentWidth), GUILayout.Height(panel));
+		RenderPage();
+		GUILayout.EndVertical();
+
 		GUILayout.EndHorizontal();
+
+		Theme.WindowHeader(Theme.WindowWidth, Key == KeyCode.None ? null : Key.ToString());
 		GUI.DragWindow();
 	}
 
-	private static string RenderFeatureText(Feature feature)
+	// The selected feature is addressed by its index in the flattened category list,
+	// so the flattened order is computed once per frame and used by both the list and the page.
+	private (string? Title, Feature[] Features)[] GetListGroups()
 	{
-		if (feature is not ToggleFeature toggleFeature || ConfigurationManager.IsSkippedProperty(feature, nameof(Enabled)))
-			return feature.Name;
+		return
+		[
+			.. FeatureCatalog
+				.GetAreas(_category)
+				.Select(area => (area == FeatureArea.General ? null : (string?)GetAreaDisplay(area), FeatureCatalog.GetFeatures(_category, area)))
+				.Where(group => group.Item2.Length > 0)
+		];
+	}
 
-		return string.Format(Strings.CommandStatusTextFormat, feature.Name, toggleFeature.Enabled ? Strings.TextOn.Green() : Strings.TextOff.Red(), string.Empty);
+	private void RenderFeatureList()
+	{
+		if (_selectedTabIndex == SummaryTabIndex)
+			return;
+
+		var index = 0;
+		foreach (var (title, features) in GetListGroups())
+		{
+			if (title != null)
+				Theme.SidebarHeader(title);
+
+			foreach (var feature in features)
+			{
+				var selected = index++ == _selectedTabIndex;
+				var state = feature is ToggleFeature toggle && !ConfigurationManager.IsSkippedProperty(feature, nameof(Enabled)) ? toggle.Enabled : (bool?)null;
+
+				if (Theme.SidebarItem(feature.Name, selected, state, GetInteractionDisplay(feature), FeatureCatalog.IsLegacy(feature.GetType())))
+					SelectFeature(feature);
+			}
+		}
+	}
+
+	private Feature? SelectedFeature
+	{
+		get
+		{
+			if (_selectedTabIndex == SummaryTabIndex)
+				return null;
+
+			var index = _selectedTabIndex;
+			foreach (var (_, features) in GetListGroups())
+			{
+				if (index < features.Length)
+					return features[index];
+
+				index -= features.Length;
+			}
+
+			return null;
+		}
+	}
+
+	private void SelectSummary()
+	{
+		_selectedTabIndex = SummaryTabIndex;
+		ResetSelection();
+	}
+
+	private void SelectCategory(FeatureCategory category)
+	{
+		if (_selectedTabIndex != SummaryTabIndex && _category == category)
+			return;
+
+		_category = category;
+		_selectedTabIndex = 0;
+		ResetSelection();
+	}
+
+	private void SelectFeature(Feature feature)
+	{
+		var index = 0;
+		foreach (var (_, features) in GetListGroups())
+		{
+			var found = Array.IndexOf(features, feature);
+			if (found >= 0)
+			{
+				index += found;
+				break;
+			}
+
+			index += features.Length;
+		}
+
+		if (_selectedTabIndex == index)
+			return;
+
+		_selectedTabIndex = index;
+		ResetSelection();
+	}
+
+	private void ResetSelection()
+	{
+		_settingsScroll = Vector2.zero;
+		_featureScroll = Vector2.zero;
+		_colorSelectionContext = null;
+		_keyCodeSelectionContext = null;
+	}
+
+	private void RenderPage()
+	{
+		var feature = SelectedFeature;
+		if (feature == null)
+		{
+			RenderSummary();
+			return;
+		}
+
+		RenderFeature(feature);
+	}
+
+	private static string GetCategoryDisplay(FeatureCategory category)
+	{
+		return Strings.ResourceManager.GetString($"Category{category}", Strings.Culture) ?? category.ToString();
+	}
+
+	private static string GetAreaDisplay(FeatureArea area)
+	{
+		return Strings.ResourceManager.GetString($"CategoryGroup{area}", Strings.Culture) ?? area.ToString();
+	}
+
+	// Hold and trigger features act while pressed or once per press; the badge tells them apart from plain toggles.
+	private static string? GetInteractionDisplay(Feature feature)
+	{
+		return feature switch
+		{
+			HoldFeature => Strings.TextHold,
+			TriggerFeature => Strings.TextTrigger,
+			_ => null,
+		};
 	}
 
 	private void RenderSummary()
 	{
-		GUILayout.BeginVertical();
+		Theme.PageHeader(SummaryTitle, Strings.FeatureRendererWelcome.Trim());
 
-		GUILayout.Label($"<i><b>{Strings.FeatureRendererWelcome}</b></i>\n", DescriptionStyle);
+		GUILayout.BeginVertical(Theme.Card);
 
-		if (GUILayout.Button(Strings.CommandLoadDescription))
+		GUILayout.BeginHorizontal();
+		if (GUILayout.Button(Strings.CommandLoadDescription, Theme.PrimaryButton))
 			LoadSettings();
 
-		if (GUILayout.Button(Strings.CommandSaveDescription))
+		GUILayout.Space(8);
+		if (GUILayout.Button(Strings.CommandSaveDescription, Theme.PrimaryButton))
 			SaveSettings();
+		GUILayout.EndHorizontal();
 
-		GUILayout.Label(Context.ConfigFile, DescriptionStyle);
+		GUILayout.Label(Context.ConfigFile, Theme.Caption);
 		if (!string.IsNullOrEmpty(ConfigurationManager.LastStatus))
-			GUILayout.Label(ConfigurationManager.LastStatus, new GUIStyle(DescriptionStyle)
+			GUILayout.Label(ConfigurationManager.LastStatus, new GUIStyle(Theme.Caption)
 			{
-				normal = { textColor = ConfigurationManager.LastOperationSucceeded ? Color.green : new Color(1, 0.6f, 0.3f) }
+				normal = { textColor = ConfigurationManager.LastOperationSucceeded ? Theme.On : Theme.Warning }
 			});
 
 		GUILayout.EndVertical();
@@ -212,16 +361,17 @@ internal abstract class FeatureRenderer : ToggleFeature
 	{
 		var orderedProperties = ConfigurationManager.GetOrderedProperties(feature.GetType());
 
-		GUILayout.BeginVertical();
+		Theme.PageHeader(feature.Name, feature.Description);
 
-		GUILayout.Label($"<i><b>{feature.Description}</b></i>\n", DescriptionStyle);
-
-		_settingsScroll = GUILayout.BeginScrollView(_settingsScroll, GUILayout.Width(370f), GUILayout.Height(Mathf.Max(180f, Screen.height * 0.65f)));
+		_settingsScroll = GUILayout.BeginScrollView(_settingsScroll, false, false, GUI.skin.horizontalScrollbar, GUI.skin.verticalScrollbar, GUILayout.Width(Theme.ContentWidth), GUILayout.ExpandHeight(true));
+		GUILayout.BeginVertical(Theme.Card);
+		GUILayout.BeginVertical(Theme.CardContent);
 		foreach (var property in orderedProperties)
 			RenderFeatureProperty(feature, property);
-		GUILayout.EndScrollView();
-
 		GUILayout.EndVertical();
+		GUILayout.EndVertical();
+
+		GUILayout.EndScrollView();
 	}
 
 	private static readonly Dictionary<string, string> _controlValues = [];
@@ -231,24 +381,23 @@ internal abstract class FeatureRenderer : ToggleFeature
 			return;
 
 		var property = orderedProperty.Property;
-
-		GUILayout.FlexibleSpace();
-		GUILayout.BeginHorizontal();
-
-		GUILayout.Label(GetPropertyDisplay(property.Name), LabelStyle);
-		GUILayout.FlexibleSpace();
-
 		var currentValue = property.GetValue(feature);
-		var currentBackgroundColor = GUI.backgroundColor;
 
 		if (currentValue == null)
 			return;
 
-		var width = GUILayout.Width(LabelStyle.fixedWidth);
+		Theme.BeginRow();
+
+		GUILayout.Label(GetPropertyDisplay(property.Name), Theme.RowLabel);
+		GUILayout.FlexibleSpace();
+
+		var width = GUILayout.Width(Theme.ControlWidth);
 		var newValue = RenderFeaturePropertyAsUIComponent(feature, orderedProperty, currentValue, width);
 
 		if (currentValue != newValue)
 			property.SetValue(feature, newValue);
+
+		Theme.EndRow();
 
 		var focused = GUI.GetNameOfFocusedControl();
 
@@ -257,9 +406,6 @@ internal abstract class FeatureRenderer : ToggleFeature
 
 		if (ShouldResetSelectionContext(focused, _keyCodeSelectionContext))
 			_keyCodeSelectionContext = null;
-
-		GUI.backgroundColor = currentBackgroundColor;
-		GUILayout.EndHorizontal();
 	}
 
 	protected abstract string GetPropertyDisplay(string propertyName);
@@ -308,7 +454,7 @@ internal abstract class FeatureRenderer : ToggleFeature
 
 					if (length > 0)
 					{
-						width = GUILayout.Width(LabelStyle.fixedWidth / length - length);
+						width = GUILayout.Width(SubControlWidth(length));
 
 						foreach (var innerOrderedProperty in subProperties)
 						{
@@ -322,11 +468,17 @@ internal abstract class FeatureRenderer : ToggleFeature
 
 				}
 
-				GUILayout.Label(string.Format(Strings.ErrorUnsupportedTypeFormat, propertyType.FullName));
+				GUILayout.Label(string.Format(Strings.ErrorUnsupportedTypeFormat, propertyType.FullName), Theme.Caption);
 				break;
 		}
 
 		return newValue;
+	}
+
+	private static float SubControlWidth(int count)
+	{
+		// Swatches carry a 4px left margin each, keep the last one inside the control column.
+		return (Theme.ControlWidth - 4f * count) / count;
 	}
 
 	private static bool ShouldResetSelectionContext<T>(string focused, SelectionContext<T>? context)
@@ -340,7 +492,7 @@ internal abstract class FeatureRenderer : ToggleFeature
 	{
 		object newValue = currentValue;
 
-		if (int.TryParse(GUILayout.TextField(currentValue.ToString(), option), out var intValue))
+		if (int.TryParse(GUILayout.TextField(currentValue.ToString(), Theme.TextField, option), out var intValue))
 			newValue = intValue;
 
 		return newValue;
@@ -348,12 +500,14 @@ internal abstract class FeatureRenderer : ToggleFeature
 
 	private static object RenderStringProperty(object currentValue, GUILayoutOption width)
 	{
-		return GUILayout.TextField(currentValue.ToString(), width);
+		return GUILayout.TextField(currentValue.ToString(), Theme.TextField, width);
 	}
 
 	private void RenderKeyCodeProperty(object currentValue, string controlName, IFeature feature, OrderedProperty orderedProperty, GUILayoutOption option)
 	{
-		if (!GUILayout.Button(currentValue.ToString(), option))
+		var key = (KeyCode)currentValue;
+
+		if (!GUILayout.Button(key == KeyCode.None ? "—" : key.ToString(), Theme.RowButton, option))
 			return;
 
 		_keyCodeSelectionContext = new KeyCodeSelectionContext(feature, orderedProperty, X, Y);
@@ -362,9 +516,7 @@ internal abstract class FeatureRenderer : ToggleFeature
 
 	private void RenderColorProperty(object currentValue, string controlName, IFeature feature, OrderedProperty orderedProperty, GUILayoutOption option)
 	{
-		GUI.backgroundColor = (Color)currentValue;
-
-		if (!GUILayout.Button(string.Empty, BoxStyle, option, GUILayout.Height(22f)))
+		if (!Theme.ColorSwatch((Color)currentValue, option))
 			return;
 
 		_colorSelectionContext = new ColorSelectionContext(feature, orderedProperty, X, Y);
@@ -382,11 +534,10 @@ internal abstract class FeatureRenderer : ToggleFeature
 		if (!_controlValues.TryGetValue(controlName, out var controlText))
 			controlText = currentValue.ToString();
 
-		if (controlText != currentValue.ToString())
-			GUI.backgroundColor = Color.red;
+		var style = controlText == currentValue.ToString() ? Theme.TextField : Theme.TextFieldInvalid;
 
 		controlText = GUILayout
-			.TextField(controlText, width)
+			.TextField(controlText, style, width)
 			.Replace(altDecimalSeparator, decimalSeparator);
 
 		if (!controlText.EndsWith(decimalSeparator) && float.TryParse(controlText, NumberStyles.Float, culture, out var floatValue))
@@ -402,7 +553,7 @@ internal abstract class FeatureRenderer : ToggleFeature
 	private object RenderBooleanProperty(object currentValue, GUILayoutOption option)
 	{
 		var boolValue = (bool)currentValue;
-		var newValue = GUILayout.Toggle(boolValue, string.Empty, option);
+		var newValue = Theme.SwitchToggle(boolValue);
 		if (newValue != boolValue)
 		{
 			_colorSelectionContext = null;

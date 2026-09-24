@@ -37,7 +37,7 @@ public class EnumPicker<T>(T value) : Picker<T>(value) where T : struct, IConver
 
 	public override void DrawWindow(int id, string title)
 	{
-		_windowRect = GUI.Window(id, _windowRect, DrawEnumPickerWindow, title);
+		_windowRect = GUI.Window(id, _windowRect, DrawEnumPickerWindow, title, Theme.PopupWindow);
 	}
 
 	private void DrawEnumPickerWindow(int id)
@@ -54,7 +54,8 @@ public class EnumPicker<T>(T value) : Picker<T>(value) where T : struct, IConver
 
 		foreach (var candidate in Candidates)
 		{
-			if (!GUILayout.Button(candidate.ToString(), GUI.skin.label))
+			var style = candidate.Equals(_value) ? Theme.ListItemSelected : Theme.ListItem;
+			if (!GUILayout.Button(candidate.ToString(), style))
 				continue;
 
 			IsSelected = true;

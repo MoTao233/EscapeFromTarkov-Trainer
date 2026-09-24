@@ -1054,4 +1054,46 @@ Colors are stored as an array of 'RGBA' floats</value>
   <data name="PropertyDoorFillOpacity" xml:space="preserve">
     <value>Door fill opacity (0=outline only)</value>
   </data>
+  <data name="CategoryAim" xml:space="preserve">
+    <value>Aimbot</value>
+  </data>
+  <data name="CategoryEsp" xml:space="preserve">
+    <value>ESP</value>
+  </data>
+  <data name="CategoryVision" xml:space="preserve">
+    <value>Vision</value>
+  </data>
+  <data name="CategoryCombat" xml:space="preserve">
+    <value>Combat</value>
+  </data>
+  <data name="CategoryCharacter" xml:space="preserve">
+    <value>Character</value>
+  </data>
+  <data name="CategoryWorld" xml:space="preserve">
+    <value>World</value>
+  </data>
+  <data name="CategorySystem" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="CategoryMisc" xml:space="preserve">
+    <value>Misc</value>
+  </data>
+  <data name="CategoryGroupRadar" xml:space="preserve">
+    <value>Radar and map</value>
+  </data>
+  <data name="CategoryGroupInteraction" xml:space="preserve">
+    <value>Items and interaction</value>
+  </data>
+  <data name="TextLegacy" xml:space="preserve">
+    <value>legacy</value>
+  </data>
+  <data name="TextTrigger" xml:space="preserve">
+    <value>execute</value>
+  </data>
+  <data name="TextHold" xml:space="preserve">
+    <value>hold</value>
+  </data>
+  <data name="TextExecute" xml:space="preserve">
+    <value>execute</value>
+  </data>
 </root>
