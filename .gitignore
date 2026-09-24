@@ -223,3 +223,6 @@ ShaderProject/ProjectSettings/*
 !ShaderProject/ProjectSettings/ProjectVersion.txt
 !ShaderProject/Packages/manifest.json
 ShaderProject/Packages/packages-lock.json
+
+# CodeGraph local index
+.codegraph/
